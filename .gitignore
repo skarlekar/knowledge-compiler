@@ -20,7 +20,6 @@ dist/
 *.tgz
 
 raw/
-
 wiki/concepts/*.md
 wiki/entities/*.md
 wiki/presentations/*.md
