@@ -150,6 +150,27 @@ Run a lint and tell me which concepts have the least source coverage.
 
 ---
 
+### 4. Reset
+
+**Trigger:** `./reset-wiki.sh`
+
+Wipes all local wiki content and raw sources, then restores the five wiki root files to their pristine template state. Use this to start fresh with a new knowledge domain or to recover from a corrupted wiki state.
+
+```bash
+./reset-wiki.sh
+```
+
+The script will prompt for confirmation before doing anything. What it clears:
+
+- `raw/` — all files and subdirectories except `.gitkeep`
+- `wiki/concepts/`, `wiki/entities/`, `wiki/summaries/`, `wiki/synthesis/`, `wiki/presentations/` — all `.md` files
+- `wiki/journal/` — all `.md` files except `template.md`
+- `wiki/index.md`, `wiki/log.md`, `wiki/analytics.md`, `wiki/dashboard.md`, `wiki/flashcards.md` — overwritten with pristine template content
+
+The script is fully self-contained — it does not call git or any external service. Pristine template content is embedded directly in the script.
+
+---
+
 ## Wiki Page Types
 
 Every page the LLM creates lives in one of these directories and follows a fixed structure.
@@ -335,6 +356,7 @@ The LLM follows these rules when writing pages — useful to know when reading t
 .
 ├── CLAUDE.md                      # Schema — the LLM's instructions
 ├── start.sh                       # Convenience launcher
+├── reset-wiki.sh                  # Reset raw/ and wiki/ to pristine template state
 ├── raw/                           # Your source documents (immutable, not in git)
 ├── .claude/
 │   └── commands/
