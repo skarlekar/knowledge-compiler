@@ -40,7 +40,7 @@ npm start
 
 ## Using the Knowledge Compiler
 
-There are three operations. Type them in the chat with your LLM (Claude Code, Claude.ai, or any LLM that can read your repo).
+There are four operations. Type them in the chat with your LLM (Claude Code, Claude.ai, or any LLM that can read your repo).
 
 ### 1. Ingest
 
@@ -150,7 +150,42 @@ Run a lint and tell me which concepts have the least source coverage.
 
 ---
 
-### 4. Reset
+### 4. Research
+
+**Trigger:** `research <topic>`
+
+Searches the web for credible sources on a topic, evaluates them, extracts attributed claims, and populates the wiki — without you providing a specific source. Use this when you want the LLM to go find and compile knowledge on a subject rather than ingest something you already have.
+
+The LLM will:
+
+1. Check existing wiki coverage to avoid duplicating what's already there
+2. Run web searches to find 5–7 candidate sources
+3. Evaluate each for credibility (author, publisher, recency, sourcing quality) — accept 3–5, skip the rest
+4. Extract key claims tagged to their source URL
+5. Map consensus, disagreement, and gaps across sources
+6. Save a research log to `raw/research-<topic-slug>-<date>.md` with full source provenance
+7. Create concept, entity, and synthesis wiki pages from the findings
+8. Update `wiki/index.md` and `wiki/log.md`
+
+**Examples:**
+
+```text
+research "transformer attention mechanisms"
+```
+
+```text
+research "agentic AI frameworks 2025"
+```
+
+```text
+research "graph database performance benchmarks"
+```
+
+The LLM uses the `research` skill, which handles web search and source evaluation automatically. Contested claims across sources are noted explicitly — never silently merged. A synthesis page is created whenever multiple competing perspectives are found.
+
+---
+
+### 5. Reset
 
 **Trigger:** `./reset-wiki.sh`
 
@@ -360,7 +395,8 @@ The LLM follows these rules when writing pages — useful to know when reading t
 ├── raw/                           # Your source documents (immutable, not in git)
 ├── .claude/
 │   └── commands/
-│       └── ingest-url.md          # Project skill — fetch URL and save to raw/
+│       ├── ingest-url.md          # Project skill — fetch URL and save to raw/
+│       └── research.md            # Project skill — web research, source evaluation, claim extraction
 ├── docs/
 │   ├── specification.md           # Full software requirements (EARS format)
 │   └── tasks.md                   # Implementation task list
