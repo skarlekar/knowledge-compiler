@@ -104,6 +104,54 @@ confidence: high | medium | low
 - **medium** — Supported by sources but limited examples or single-source
 - **low** — Single mention, anecdotal, or speculative
 
+### Multi-source Confidence (Research workflow)
+
+When a page is informed by multiple sources from a Research operation, set confidence based on source agreement:
+
+| Sources | Agreement | Confidence |
+| --- | --- | --- |
+| 3+ credible | Consensus | `high` |
+| 2 credible | Consensus | `high` |
+| Any | Contested — sources disagree | `medium` |
+| 1 credible only | No corroboration | `medium` |
+| Emerging, speculative, or heavily opinion-based | — | `low` |
+
+## Source Credibility Heuristics
+
+Used during the Research workflow when Claude is selecting sources rather than the user.
+
+**Prefer:**
+
+- Academic papers and preprints (arXiv, Google Scholar, PubMed, ACM)
+- Official documentation (vendor docs, standards bodies, government sources)
+- Established publications (major newspapers, peer-reviewed journals, recognised industry analysts)
+- Named authors with verifiable domain credentials
+
+**Avoid:**
+
+- Anonymous or unattributed content
+- Advocacy or heavily opinion-framed content (unless capturing a specific perspective is the explicit goal)
+- Sources older than 2 years for fast-moving topics — flag staleness if used
+- Content that is itself a summary of summaries with no primary sources cited
+
+**Note:** Claude's knowledge cutoff is August 2025. For topics that evolve rapidly, add a note to the wiki page that the research reflects the state of knowledge at retrieval date and may be outdated.
+
+## Contradiction Handling
+
+**Within a Research operation (cross-source contradictions):**
+
+- Never silently merge conflicting claims into false consensus
+- Use explicit framing: *"Source X holds that… while Source Y argues…"*
+- Where two credible frameworks genuinely compete, create separate concept pages rather than one page that conflates them
+- The synthesis page is the right place to map the disagreement; concept pages should represent individual coherent positions
+- Set confidence to `medium` for any claim that is contested across sources
+
+**Between Research and existing wiki (inbound contradictions):**
+
+- Flag contradictions with existing wiki content explicitly in the log entry
+- Do not silently overwrite existing high-confidence content with research findings
+- If research contradicts an existing high-confidence page, note both positions and downgrade confidence to `medium` until the contradiction is resolved by the user
+
 ## Workflows
 
 ### Ingest
@@ -152,6 +200,30 @@ When the user says "lint" or "health check":
 5. Suggest new sources or topics to investigate
 6. Update log
 
+### Research
+
+When the user says "research [topic]":
+
+**Boundary with Query:** Query reasons over the existing wiki. Research populates the wiki from external sources. Do not research a topic the wiki already covers well — run a Query first to check.
+
+**Boundary with Ingest:** If the user provides a specific URL or file, use Ingest, not Research.
+
+Invoke the `research` skill with the topic as the argument:
+`Skill({ skill: "research", args: "<topic>" })`
+
+The skill handles web search, source evaluation, content fetching, claim extraction, and saves a research log to `raw/research-<topic-slug>-<YYYY-MM-DD>.md`. Once the skill completes:
+
+1. Read the research log at `raw/research-<topic-slug>-<YYYY-MM-DD>.md`
+2. Create `wiki/summaries/research-<topic-slug>-<YYYY-MM-DD>.md`
+3. Identify all concepts and entities across the accepted sources
+4. For each concept/entity: create the page if it doesn't exist, or update it with new information
+   - Apply Multi-source Confidence rules when setting confidence
+   - Apply Contradiction Handling rules when sources disagree
+5. If multiple perspectives or competing frameworks were found, create a synthesis page in `wiki/synthesis/`
+6. Add cross-links in both directions between all touched pages
+7. Update `wiki/index.md`
+8. Append to `wiki/log.md` with timestamp, topic, sources consulted count, and pages created/updated
+
 ## Rules
 
 - Never modify files in `raw/`
@@ -162,3 +234,6 @@ When the user says "lint" or "health check":
 - Use plain English — define jargon on first use in each page
 - All dates in ISO 8601 format: YYYY-MM-DD
 - When a source provides specific examples, include them with concrete details
+- Research populates the wiki from external sources; Query reasons over the existing wiki — never conflate the two
+- Never silently overwrite existing high-confidence wiki content with research findings that contradict it
+- The research log in `raw/` is the authoritative record of what was retrieved; treat it as immutable after creation
