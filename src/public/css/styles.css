@@ -1,0 +1,498 @@
+/* ==========================================================================
+   Wiki Graph Viewer — Stylesheet
+   TASK-014  IR-LAY-001, IR-LAY-002
+   TASK-015  NFR-USE-001
+   TASK-037  IR-CP-001 through IR-CP-004
+   ========================================================================== */
+
+/* --- Reset & Base -------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #222;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* --- Toolbar  IR-LAY-003 ------------------------------------------------ */
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 16px;
+  background: #1a1a2e;
+  color: #fff;
+  height: 48px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.toolbar-left { flex: 0 0 auto; }
+.toolbar-center { flex: 1 1 auto; display: flex; align-items: center; gap: 12px; }
+.toolbar-right { flex: 0 0 auto; display: flex; gap: 6px; }
+
+.app-title { font-size: 16px; font-weight: 600; white-space: nowrap; }
+
+.toolbar-btn {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.toolbar-btn:hover:not(:disabled) { background: rgba(255,255,255,0.25); }
+.toolbar-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* --- Search  FR-SF-001 -------------------------------------------------- */
+.search-container { position: relative; flex: 0 1 280px; }
+
+#search-input {
+  width: 100%;
+  padding: 5px 10px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+}
+#search-input::placeholder { color: rgba(255,255,255,0.5); }
+#search-input:focus { border-color: #4A90D9; background: rgba(255,255,255,0.15); }
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background: #fff;
+  color: #222;
+  border: 1px solid #ccc;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 200;
+}
+.search-dropdown .search-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid #eee;
+}
+.search-dropdown .search-item:hover,
+.search-dropdown .search-item.active { background: #e8f0fe; }
+.search-dropdown .search-item .search-path {
+  font-size: 11px;
+  color: #888;
+  margin-left: 6px;
+}
+
+/* --- Type Filters  FR-SF-003 -------------------------------------------- */
+.type-filters {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.type-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.type-filter-btn .swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.type-filter-btn.inactive {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+/* --- Breadcrumb  IR-LAY-004 --------------------------------------------- */
+#breadcrumb-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 16px;
+  background: #f0f0f0;
+  font-size: 12px;
+  min-height: 26px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+#breadcrumb-bar a {
+  color: #4A90D9;
+  text-decoration: none;
+  cursor: pointer;
+}
+#breadcrumb-bar a:hover { text-decoration: underline; }
+#breadcrumb-bar .sep { color: #999; margin: 0 2px; }
+
+/* --- Panels  IR-LAY-001, IR-LAY-002 ------------------------------------ */
+#panels {
+  display: flex;
+  flex: 1 1 auto;
+  overflow: hidden;
+  height: calc(100vh - 48px - 26px); /* toolbar + breadcrumb */
+}
+
+/* --- Graph Panel  IR-GP-002 --------------------------------------------- */
+#graph-panel {
+  flex: 0 0 45%;
+  position: relative;
+  background: #F8F9FA;
+  overflow: hidden;
+  min-width: 300px;
+}
+
+#graph-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Divider  NFR-USE-002 ----------------------------------------------- */
+.divider {
+  flex: 0 0 5px;
+  background: #d0d0d0;
+  cursor: col-resize;
+  transition: background 0.15s;
+  z-index: 10;
+}
+.divider:hover, .divider.dragging { background: #4A90D9; }
+
+/* --- Content Panel  IR-CP-001 through IR-CP-004 ------------------------ */
+#content-panel {
+  flex: 1 1 55%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 300px;
+}
+
+.metadata-bar {
+  padding: 8px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  min-height: 40px;
+}
+
+.metadata-bar .meta-title { font-weight: 600; font-size: 15px; }
+.metadata-bar .meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #fff;
+}
+.metadata-bar .meta-tag {
+  background: #e0e0e0;
+  color: #333;
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.metadata-bar .meta-info {
+  color: #666;
+  font-size: 12px;
+}
+
+/* IR-CP-002 — Scrollable */
+.content-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+/* IR-CP-003 — Typography */
+.content-body .content-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.content-body h1 { font-size: 1.8em; margin: 0.8em 0 0.4em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+.content-body h2 { font-size: 1.5em; margin: 1em 0 0.4em; }
+.content-body h3 { font-size: 1.25em; margin: 0.8em 0 0.3em; }
+.content-body h4, .content-body h5, .content-body h6 { font-size: 1.1em; margin: 0.6em 0 0.3em; }
+.content-body p { margin: 0.6em 0; }
+.content-body ul, .content-body ol { margin: 0.5em 0 0.5em 1.5em; }
+.content-body li { margin: 0.2em 0; }
+.content-body blockquote {
+  border-left: 4px solid #4A90D9;
+  padding: 8px 16px;
+  margin: 0.8em 0;
+  background: #f5f8ff;
+  color: #444;
+}
+.content-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.8em 0;
+  font-size: 14px;
+}
+.content-body th, .content-body td {
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  text-align: left;
+}
+.content-body th { background: #f5f5f5; font-weight: 600; }
+.content-body hr { border: none; border-top: 1px solid #ddd; margin: 1.5em 0; }
+.content-body img { max-width: 100%; }
+
+/* IR-CP-003 — Inline code */
+.content-body code {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  background: #f0f0f0;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+/* IR-CP-004 — Code blocks */
+.content-body pre {
+  background: #F5F5F5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  margin: 0.8em 0;
+}
+.content-body pre code {
+  background: none;
+  padding: 0;
+  font-size: 13px;
+}
+
+/* Internal wiki links in content */
+.content-body a.wiki-link {
+  color: #4A90D9;
+  text-decoration: none;
+  border-bottom: 1px dashed #4A90D9;
+  cursor: pointer;
+}
+.content-body a.wiki-link:hover { border-bottom-style: solid; }
+.content-body a[target="_blank"]::after { content: " ↗"; font-size: 0.8em; }
+
+/* --- Legend  FR-GV-014 -------------------------------------------------- */
+.legend {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  z-index: 20;
+  pointer-events: none;
+  max-width: 150px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+  transition: opacity 0.2s;
+}
+.legend-item.dimmed { opacity: 0.5; }
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* --- Zoom Controls  FR-GV-013 ------------------------------------------ */
+.zoom-controls {
+  position: absolute;
+  bottom: 50px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 20;
+}
+.zoom-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.zoom-btn:hover { background: #e8e8e8; }
+
+/* --- Stats Bar  FR-GS-001 ----------------------------------------------- */
+.stats-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.92);
+  border-top: 1px solid #ddd;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: #555;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  z-index: 15;
+}
+.stats-bar .stat-item { white-space: nowrap; }
+
+/* --- Tooltip  FR-GV-010 ------------------------------------------------ */
+.tooltip {
+  position: fixed;
+  background: #1a1a2e;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 300;
+  max-width: 280px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  line-height: 1.4;
+}
+.tooltip .tip-path { opacity: 0.7; font-size: 11px; }
+.tooltip .tip-type { font-weight: 600; }
+
+/* --- Empty message  NFR-REL-001 ---------------------------------------- */
+.empty-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 48px - 26px);
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+  padding: 32px;
+}
+
+/* --- Utility ------------------------------------------------------------ */
+.hidden { display: none !important; }
+
+/* --- Refresh Button Spinner  FR-RF-003 --------------------------------- */
+.toolbar-btn.refreshing {
+  pointer-events: none;
+  opacity: 0.7;
+}
+.toolbar-btn.refreshing .refresh-icon {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* --- Toast Notifications  FR-UP-003 ------------------------------------ */
+.toast-container {
+  position: fixed;
+  top: 56px;
+  right: 16px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  animation: toast-in 0.3s ease;
+  max-width: 360px;
+}
+.toast.success { background: #27ae60; }
+.toast.error { background: #e74c3c; }
+.toast.info { background: #2980b9; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* --- D3 Graph Nodes & Edges -------------------------------------------- */
+.node-circle {
+  cursor: pointer;
+  stroke: #fff;
+  stroke-width: 1.5px;
+  transition: r 0.2s, stroke-width 0.2s;
+}
+.node-circle.active {
+  stroke: #E74C3C;
+  stroke-width: 3px;
+}
+.node-circle.error-node {
+  stroke: #E74C3C;
+  stroke-dasharray: 4 3;
+  stroke-width: 2px;
+}
+.node-label {
+  font-size: 10px;
+  fill: #333;
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.edge-line {
+  stroke: #bbb;
+  stroke-width: 1px;
+  fill: none;
+  transition: opacity 0.2s, stroke-width 0.2s;
+}
+.edge-line.highlighted {
+  stroke: #555;
+  stroke-width: 2px;
+}
+.edge-line.dimmed { opacity: 0.15; }
+.edge-arrowhead { fill: #bbb; }
+.edge-arrowhead.highlighted { fill: #555; }
+.edge-arrowhead.dimmed { opacity: 0.15; }
+
+/* --- Responsive  NFR-USE-001 ------------------------------------------- */
+@media (max-width: 1023px) {
+  #panels { flex-direction: column; }
+  #graph-panel { flex: 0 0 50%; min-width: unset; min-height: 250px; }
+  .divider {
+    flex: 0 0 5px;
+    cursor: row-resize;
+    width: 100%;
+  }
+  #content-panel { flex: 1 1 50%; min-width: unset; }
+}

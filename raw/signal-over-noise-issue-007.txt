@@ -1,0 +1,161 @@
+Signal Over Noise — Issue #7: The Model Is Commodity. The Harness Is Moat.
+
+URL: https://signalovernoise.karlekar.cloud/issue-007.html
+Publication Date: April 11, 2026
+Author: Srini Karlekar
+
+---
+
+It was 3:14 AM on a Tuesday when the phone buzzed incessantly.
+
+An agentic code-review pipeline — the one that had crushed every demo, the one the VP had shown the board — had entered a retry loop against a flaky third-party static-analysis API. No circuit breaker. No cost ceiling. No timeout. By the time a bleary-eyed engineer killed the process at 3:47 AM, the agent had burned $412 in API calls and produced exactly nothing useful. The pull request it was supposed to review sat untouched. The downstream deployment pipeline stalled. The morning standup became an incident retro.
+
+The model was fine. The prompt was fine. The harness didn't exist in any meaningful sense.
+
+This is not an unusual story. It is _the_ story. Across regulated financial services, mortgage finance, healthcare IT, and government technology programs, the pattern repeats: an agent that performs brilliantly under human supervision disintegrates the moment it runs unsupervised at scale. The gap between demo and deploy is not a model problem. It is not a prompt problem. It is a _harness engineering_ problem — and the industry is only now beginning to name it.
+
+The market already understands this, even if most engineering teams don't. In December 2025, Meta acquired Manus — an agentic AI startup — for approximately $2 billion. Not for the model. Manus uses foundation models from Anthropic, OpenAI, and others — the same models any team can access via API. Meta bought the harness. Manus solved the messy, unglamorous & highly complex problem of agentic orchestration that turns AI from running Chatbots into an autonomous digital worker. The harness is the product. The model is the commodity they rent.
+
+---
+
+MOST ENTERPRISE TEAMS ARE STUCK IN THE DEMO PHASE
+
+The evolution of how humans work with AI code agents follows a remarkably clean three-phase arc. Understanding where your organization sits on this arc — honestly, not aspirationally — is the first step toward closing the gap between the agents that demo and the agents that deploy.
+
+Phase 1: Vibe Coding (2024–2025)
+
+Coined by Andrej Karpathy in February 2025, vibe coding is the intuition-driven approach that dominated early agent adoption. Open a chat window, describe what you want, run what the model generates, iterate. No spec. No plan. No verification beyond "does it feel right?" Karpathy called it "the hottest new programming paradigm" — but acknowledged it works best for throwaway projects where correctness doesn't matter. For enterprise systems, vibe coding is prototyping mistaken for production engineering.
+
+Phase 2: Spec Coding (2025–2026)
+
+The backlash arrived predictably. Teams who shipped vibe-coded agents into production couldn't debug failures, couldn't reproduce behaviors, and couldn't answer the most basic audit question: what was this agent supposed to do? Spec coding inverts the workflow. Requirements, design, and acceptance criteria come first. The agent implements against a written plan. Human approval gates separate specification from implementation. AWS Kiro, GitHub's spec-kit, and a wave of smaller tools now formalize this approach.
+
+Phase 3: Harness Engineering (2026+)
+
+Specs tell the agent what to build. The harness constrains how it operates while building it — and more critically, how it operates afterward. Context management, tool access control, cost boundaries, retry policies, verification layers, observability instrumentation. The harness is the runtime infrastructure that makes an agent safe, reliable, and auditable at scale. It is what separates a system you can improve from a system you can only restart.
+
+Here is the uncomfortable truth: most enterprise teams are stuck somewhere between Phase 1 and Phase 2. They have graduated from pure vibe coding — they write prompts with more care, they review agent outputs before merging — but they have not adopted specification-driven development in any systematic way, and they have no harness infrastructure at all. They are celebrating demos and dreading production. The maturity gap is real, and it is widening.
+
+Friction Point: The cultural barrier to spec coding is not technical — it's psychological. Teams that have experienced the dopamine hit of vibe coding resist the upfront discipline of writing specifications. "It slows us down" is the universal objection. It does. That's the point. The speed you lose in specification is the speed you gain in not debugging a hallucinated architecture at 3 AM.
+
+---
+
+SPECIFICATION-DRIVEN DEVELOPMENT IS THE AUDIT TRAIL THE INDUSTRY FORGOT TO BUILD
+
+Specification-driven development (SDD) is not a new idea. It is a very old idea — requirements before implementation — applied to a new context: autonomous agents that write code, call tools, and make decisions without continuous human oversight.
+
+The clearest industry signal arrived with AWS Kiro, Amazon's agentic IDE announced in mid-2025 and rapidly gaining enterprise traction. Kiro's "spec mode" enforces a three-document workflow: the agent generates requirements.md (user stories with EARS-notation acceptance criteria), design.md (technical architecture), and tasks.md (implementation plan). Crucially, a human approval gate sits between specification and implementation. The agent cannot write a single line of code until a human reviews and approves the spec. This is not a suggestion. It is an architectural constraint.
+
+The EARS notation (Easy Approach to Requirements Syntax) deserves specific attention. Developed by Alistair Mavin and colleagues at Rolls-Royce, EARS provides structured templates for writing unambiguous requirements: "When [trigger], the system shall [response]" or "While [state], the system shall [behavior]." The genius of EARS in the agentic context is that these requirements are machine-testable. An agent can generate acceptance criteria in EARS format, and a verification layer can evaluate whether the implementation satisfies them — without human interpretation of vague prose.
+
+GitHub's spec-kit, launched in early April 2026, brings SDD natively into the developer workflow. Where Kiro bundles specification into its IDE, spec-kit integrates with existing repositories and CI/CD pipelines. The approach is complementary: Kiro excels at greenfield agent-driven development; spec-kit retrofits specification discipline onto existing codebases where agents are being introduced incrementally.
+
+The research community has formalized what practitioners are discovering empirically. A February 2026 paper, "Agent Behavioral Contracts: Formal Specification and Runtime Enforcement for Reliable Autonomous AI Agents" (arxiv 2602.22302), makes the foundational argument: traditional software relies on contracts — APIs, type systems, assertions — to specify and enforce correct behavior. AI agents, by contrast, operate on prompts and natural language instructions, which are inherently ambiguous and unenforceable at runtime. The paper proposes a formal contract model for agents that separates what the agent is supposed to do (specification) from how the runtime enforces it (verification). An earlier companion paper, "Agent Contracts: A Formal Framework for Resource-Bounded Autonomous AI Systems" (arxiv 2601.08815, January 2026), extends this to resource constraints — formalizing cost limits, time bounds, and tool access restrictions as first-class contract terms. This is the theoretical foundation for harness engineering: the harness is the runtime contract enforcer.
+
+The three-document system — requirements, design, tasks — creates something vibe coding destroys entirely: traceability. When an agent produces unexpected behavior, you can trace backward from the implementation to the task, from the task to the design, from the design to the requirement. You can identify whether the failure was a specification error (we asked for the wrong thing), a design error (we designed it incorrectly), or an implementation error (the agent built it wrong). Without this traceability, every failure is a mystery, and every fix is a guess.
+
+Friction Point: In regulated industries — mortgage finance, consumer banking, healthcare — the audit question is not optional. "What was this agent supposed to do, and what did it actually do?" is a compliance question with legal consequences. Spec-driven development is not engineering hygiene. It is audit infrastructure. The teams who skip it are not moving faster. They are accumulating regulatory debt that compounds with every deployment.
+
+---
+
+THE HARNESS IS THE OPERATING SYSTEM FOR YOUR AGENT
+
+Phil Schmid of Hugging Face articulated it most crisply: the model is the CPU; the harness is the operating system. A March 2026 paper from the University of Edinburgh, "LLM Readiness Harness: Evaluation, Observability, and CI Gates for LLM/RAG Applications" (arxiv 2603.27355), provides an engineering blueprint: bind quality metrics to observability, enforce CI gates before deployment, create an operational substrate for automated self-testing.
+
+Harness engineering is the discipline of building the runtime infrastructure that constrains, verifies, and observes an agent's behavior in production. It is the layer between the model and the real world — the layer that most teams skip because it doesn't demo well and doesn't generate the kind of excitement that a new model capability does.
+
+Martin Fowler's February 2026 analysis of AI-assisted coding workflows provides the architectural blueprint. Fowler describes a system that mixes deterministic rules — linting, type checking, module boundary enforcement, file permission constraints — with LLM-based checks that handle judgment calls the rules can't express. The key insight is that the deterministic rules are non-negotiable. They are the walls. The LLM judgment fills the space between the walls, but it does not replace them.
+
+Research from December 2025, "Reliable Agent Engineering Should Integrate Machine-Compatible Organizational Principles" (arxiv 2512.07665), identifies tool-use as both the primary capability-expansion mechanism and the primary risk surface for LLM agents.
+
+A production-grade harness has six components:
+
+1. Context Management — What information does the agent have access to? Deliberate scoping of files, APIs, memory stores, and prior conversation turns. Context is both capability and attack surface.
+
+2. Tool Access Control — Which tools can the agent invoke, with what parameters, at what frequency? Tool access is the agent equivalent of IAM policies. An agent with unrestricted tool access is a service account with admin privileges — a compliance incident waiting to happen.
+
+3. Verification Layer — How do you know the agent did what it was supposed to? Stripe's Minions architecture enforces test execution before the agent can proceed to the next step. Workflow cannot progress without deterministic verification.
+
+4. Retry and Recovery Logic — What happens when something fails? Without explicit retry policies — exponential backoff, maximum attempt limits, cost circuit breakers, timeout ceilings — an agent will retry forever.
+
+5. Observability — Full execution traces: every LLM call, every tool invocation, every decision point, every token spent, every retry. Without observability, you cannot debug, optimize, or audit.
+
+6. Safety Boundaries — What is the agent absolutely not allowed to do, regardless of what the model wants? Guards for edge cases, adversarial inputs, emergent behaviors that no specification can fully predict.
+
+OpenAI's internal proof point: a five-month experiment — over one million lines of code, zero human-written lines. The "no manual code" constraint was itself a harness rule. The verification requirements, code review process, and deployment gates — the harness enforced the methodology, not just the code quality.
+
+Build-versus-buy: buy observability (LangSmith, Langfuse), buy sandboxing (E2B), buy workflow orchestration (Temporal) — and build the policy layer that connects them to your specific security, compliance, and cost requirements.
+
+---
+
+THE FOUR HARNESS FAILURE MODES EVERY ENTERPRISE TEAM WILL HIT
+
+Failure Mode 1: The 3 AM Retry Loop
+What happens: Agent calls external API. API returns transient error. Agent retries indefinitely. No maximum retry count, no cost circuit breaker, no timeout ceiling.
+Harness fix: Cost circuit breakers, exponential backoff with jitter, maximum retry counts, timeout policies, dead-letter queues.
+
+Failure Mode 2: The Silent Scope Creep
+What happens: Agent tasked with modifying a specific module quietly modifies files outside its declared scope — config files, shared libraries, database migrations.
+Harness fix: Explicit read/write permission scoping per task. File-system sandboxing. Diff validation that rejects out-of-scope changes before version control.
+
+Failure Mode 3: The Spec Drift Bug
+What happens: Spec updated two commits ago but not pinned. Agent implements against outdated requirements. Implementation is correct but satisfies requirements that no longer exist.
+Harness fix: Treat specs as versioned artifacts. Pin spec version at task creation. Validate implementation against pinned spec.
+
+Failure Mode 4: The Invisible Dependency Chain
+What happens: Agent calls a tool. Tool calls external service. Service calls another API. Failure three layers down is invisible to the agent. Cascade multiplies. Audit trail stops at tool call boundary.
+Harness fix: End-to-end trace propagation. Distributed tracing (OpenTelemetry) extended to agent tool calls. Circuit breakers at every layer boundary.
+
+---
+
+THE TOOLSCAPE IS CONVERGING AROUND SPEC + HARNESS
+
+Spec-first tools:
+- AWS Kiro: most complete spec-to-implementation pipeline within a single IDE
+- GitHub spec-kit: integrates SDD into existing repositories
+- Taskmaster AI: task decomposition, breaking specs into agent-executable work units
+
+Harness infrastructure:
+- LangSmith / Langfuse: observability — execution traces, cost tracking
+- E2B: sandboxed execution
+- Temporal: workflow orchestration — state, retries, timeouts, recovery
+
+Kiro's Agent Hooks: lifecycle hooks firing before/after agent actions, enabling custom validation, logging, constraint enforcement within the IDE. The direction the market is moving: not spec and harness as separate categories, but integrated environments.
+
+---
+
+THE ENTERPRISE IMPLEMENTATION PLAYBOOK
+
+Step 1: Pick one workflow. Specify it completely.
+Step 2: Write the harness contract (runtime constraints, allowlists, cost ceiling, timeout, rollback triggers).
+Step 3: Instrument before you ship (observability from day one).
+Step 4: Treat specs as living contracts in version control.
+Step 5: Close the audit loop ("what was this agent supposed to do and what did it actually do?").
+
+---
+
+THE DURABLE ADVANTAGE IS INFRASTRUCTURE, NOT INTELLIGENCE
+
+The model will keep getting smarter. The durable advantage belongs to teams who build the harness: specification discipline, runtime infrastructure, observability, and audit trail.
+
+OpenAI's million-line experiment proved that a well-designed harness can make model-generated code reliable at scale. Stripe's Minions proved that deterministic verification gates make agent-shipped features trustworthy.
+
+The model is the engine. The harness is the vehicle. Nobody buys an engine and calls it a car.
+
+---
+
+ABOUT THE AUTHOR
+
+Written by Srini Karlekar — enterprise technology leader, author of "Software with a Soul," and builder of agentic systems.
+Signal Over Noise is a weekly intelligence briefing on Agentic AI for enterprise technology leaders and builders.
+
+---
+
+ACADEMIC PAPERS REFERENCED
+
+- "Agent Behavioral Contracts: Formal Specification and Runtime Enforcement for Reliable Autonomous AI Agents" (February 2026) — arxiv.org/abs/2602.22302
+- "Agent Contracts: A Formal Framework for Resource-Bounded Autonomous AI Systems" (January 2026) — arxiv.org/abs/2601.08815
+- "LLM Readiness Harness: Evaluation, Observability, and CI Gates for LLM/RAG Applications" (March 2026, University of Edinburgh) — arxiv.org/abs/2603.27355
+- "Reliable Agent Engineering Should Integrate Machine-Compatible Organizational Principles" (December 2025) — arxiv.org/abs/2512.07665
+
+TAGS: #AgenticAI #HarnessEngineering #SpecificationDrivenDevelopment #EnterpriseAI #AWSKiro #DevOps #AIReliability #ProductionAI #SoftwareEngineering #AgentOps

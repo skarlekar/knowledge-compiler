@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Compiler</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- TASK-016  IR-LAY-003 — Toolbar -->
+  <header id="toolbar">
+    <div class="toolbar-left">
+      <h1 class="app-title">Knowledge Compiler</h1>
+    </div>
+    <div class="toolbar-center">
+      <!-- TASK-044  FR-SF-001 — Search -->
+      <div class="search-container">
+        <input type="text" id="search-input" placeholder="Search nodes…" autocomplete="off" />
+        <div id="search-dropdown" class="search-dropdown hidden"></div>
+      </div>
+      <!-- TASK-046  FR-SF-003 — Type filter toggles -->
+      <div id="type-filters" class="type-filters"></div>
+    </div>
+    <div class="toolbar-right">
+      <!-- TASK-058  FR-RF-001 — Refresh -->
+      <button id="btn-refresh" class="toolbar-btn" title="Refresh graph">&#10227; Refresh</button>
+      <!-- TASK-061  FR-UP-001 — Upload -->
+      <button id="btn-upload" class="toolbar-btn" title="Upload file to raw/">&#11014; Upload</button>
+      <input type="file" id="upload-input" class="hidden" multiple />
+      <!-- TASK-042  FR-NAV-005 -->
+      <button id="btn-back" class="toolbar-btn" title="Back" disabled>&#8592; Back</button>
+      <!-- TASK-043  FR-NAV-006 -->
+      <button id="btn-home" class="toolbar-btn" title="Home">&#8962; Home</button>
+      <!-- TASK-028  FR-GV-012 -->
+      <button id="btn-fit" class="toolbar-btn" title="Fit to view">&#11036; Fit</button>
+    </div>
+  </header>
+
+  <!-- TASK-017  IR-LAY-004, FR-NAV-004 — Breadcrumb bar -->
+  <nav id="breadcrumb-bar"></nav>
+
+  <!-- TASK-014  IR-LAY-001, IR-LAY-002 — Two-panel layout -->
+  <main id="panels">
+    <!-- Graph panel -->
+    <section id="graph-panel">
+      <!-- TASK-030  FR-GV-014, IR-GP-001 — Legend (top-right) -->
+      <div id="legend" class="legend"></div>
+
+      <!-- D3 SVG rendered here by visualization.js -->
+      <svg id="graph-svg"></svg>
+
+      <!-- TASK-029  FR-GV-013, IR-GP-001 — Zoom controls (bottom-right) -->
+      <div class="zoom-controls">
+        <button id="btn-zoom-in" class="zoom-btn" title="Zoom in">+</button>
+        <button id="btn-zoom-out" class="zoom-btn" title="Zoom out">&minus;</button>
+      </div>
+
+      <!-- TASK-048  FR-GS-001, IR-GP-001 — Statistics bar (bottom) -->
+      <div id="stats-bar" class="stats-bar"></div>
+    </section>
+
+    <!-- Resizable divider  NFR-USE-002 -->
+    <div id="divider" class="divider"></div>
+
+    <!-- Content panel -->
+    <section id="content-panel">
+      <!-- TASK-036  FR-CR-006 — Metadata bar -->
+      <div id="metadata-bar" class="metadata-bar"></div>
+      <!-- TASK-032  FR-CR-001 — Rendered markdown -->
+      <article id="content-body" class="content-body"></article>
+    </section>
+  </main>
+
+  <!-- TASK-026  FR-GV-010 — Hover tooltip -->
+  <div id="tooltip" class="tooltip hidden"></div>
+
+  <!-- TASK-063  FR-UP-003 — Toast notifications -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- NFR-REL-001 — Empty wiki message -->
+  <div id="empty-message" class="empty-message hidden">
+    No wiki files found. Add Markdown files to the <code>wiki/</code> directory to get started.
+  </div>
+
+  <!-- Vendor libs (bundled locally — NFR-PORT-003, NFR-MAINT-001) -->
+  <script src="lib/d3.v7.min.js"></script>
+  <script src="lib/marked.min.js"></script>
+  <script src="lib/js-yaml.min.js"></script>
+  <script src="lib/dompurify.min.js"></script>
+
+  <!-- Application modules -->
+  <script src="js/utils.js"></script>
+  <script src="js/graph.js"></script>
+  <script src="js/visualization.js"></script>
+  <script src="js/content.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
