@@ -75,11 +75,12 @@ confidence: high | medium | low
 
 **Newsletter pages** (`wiki/newsletters/`):
 
-- Named `newsletter-<topic-slug>-<YYYY-MM-DD>.md`
+- Named `newsletter-<topic-slug>-<YYYY-MM-DD>.md`; if a same-day same-topic file already exists, append a version suffix: `newsletter-<topic-slug>-<YYYY-MM-DD>-v2.md`, `-v3.md`, etc.
 - Long-form (4,000–5,500 words), Signal Over Noise style
 - Masthead: `*Signal Over Noise | [Topic] | [YYYY-MM-DD]*`
 - Sections: Opening hook, Problem/Context (with comparison table), 2–3 deep analysis sections, Threats, Toolscape, Action Item, Closing Signal
 - Footer: `*Tags: #tag1 #tag2 ...*`
+- Additional frontmatter fields: `word_count: ~NNNN` and `wiki_pages_used: [...]`
 
 ## Linking Conventions
 

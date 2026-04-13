@@ -11,6 +11,9 @@ Transform the wiki's knowledge on a topic into a compelling, energetic long-form
 newsletter in the Signal Over Noise style. Saves to
 `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`.
 
+If a newsletter for the same topic and date already exists, appends a version
+suffix: `-v2`, `-v3`, etc.
+
 If wiki coverage is insufficient, automatically invokes the `research` skill to
 enrich the wiki before writing — two outcomes from one command.
 
@@ -20,30 +23,71 @@ Topic: $ARGUMENTS
 
 ## Steps
 
-### 1 — Assess wiki coverage
+### 1 — Assess wiki coverage and check existing newsletters
 
-Read `wiki/index.md`. Identify all concept, entity, summary, synthesis, and
-newsletter pages relevant to the topic. Read those pages.
+Read `wiki/index.md`. Do two things with it:
+
+**A. Scan the Newsletters section for related prior issues.**
+Note any existing newsletters whose topic overlaps with this one. These will be
+cross-referenced in the new newsletter.
+
+**B. Identify all concept, entity, summary, and synthesis pages relevant to the
+topic. Read those pages.**
 
 **Coverage is sufficient if all three are true:**
-- At least 3 substantive wiki pages exist on the topic
-- At least one raw source file or research log is cited in those pages
+
+- At least 3 **substantive** wiki pages exist on the topic — each must have
+  populated content in its primary sections (Definition + How It Works for
+  concept pages; Overview + Characteristics for entity pages). Stub pages with
+  placeholder text do not count.
+- At least one raw source file or research log is cited in those pages.
 - The pages collectively cover: what the thing is, how it works, and some
-  indication of threats, tools, or adoption challenges
+  indication of threats, tools, or adoption challenges.
 
 **If coverage is insufficient:**
 - Invoke the research skill: `Skill({ skill: "research", args: "<topic>" })`
-- The skill enriches the wiki with new concept pages, summaries, and a research
-  log in `raw/` as a side effect
-- After the skill completes, re-read `wiki/index.md` and the new pages before
-  continuing
+- After the skill completes, **re-run the full coverage check above** — re-read
+  `wiki/index.md` and all new pages, then verify all three criteria again.
+- If coverage is still insufficient after research, report this to the user and
+  stop — do not write a newsletter on thin material.
 
-### 2 — Read original sources for direct quotes
+### 2 — Read original sources, verify claims, and collect entity URLs
 
+**A. Read sources for direct quotes.**
 For each relevant wiki page, read its `sources` frontmatter field and read those
 raw files or research logs. Direct quotes and specific claims with source
-attribution (arXiv IDs, author names, publication names) must come from the
-original sources — not paraphrased from wiki pages.
+attribution (arXiv IDs, author names, publication names, dates, version numbers,
+statistics) must come from the original sources — not paraphrased from wiki pages.
+
+**B. Verify every specific claim you intend to use.**
+Compile a list of every specific claim planned for the newsletter: dates, version
+numbers, statistics, named attributions, direct quotes. Verify each one appears
+explicitly in the research log or a raw source file. Claims that cannot be traced
+to a source must be downgraded to general observations or omitted. Never
+manufacture specifics from LLM knowledge alone — if the source doesn't say it,
+don't assert it as fact.
+
+**C. Collect canonical URLs for all entities that will appear in the newsletter.**
+For each named person, organization, tool, paper, or gist that will be mentioned:
+
+- **Named people** (researchers, practitioners, executives): X/Twitter profile
+  (`https://x.com/<handle>`), or personal site, or LinkedIn — prefer X for tech
+  figures, LinkedIn for business figures. Check the entity's wiki page first for
+  any URL already recorded there.
+- **Organizations and companies**: public homepage (e.g., `https://neo4j.com`).
+- **Open-source tools**: GitHub repository URL or official docs site.
+- **Commercial tools**: official product page.
+- **Papers, gists, articles**: use the direct URL from the research log citation.
+  For arXiv papers, use the abstract page: `https://arxiv.org/abs/XXXX.XXXXX`.
+
+**URL priority order:**
+
+1. Explicit citation URL from the research log
+2. URL found in the entity's wiki page (Overview or Characteristics section)
+3. Canonical public URL from LLM knowledge (well-known entities only)
+4. Omit the hyperlink if uncertain — never manufacture or guess a URL
+
+Compile the URL map before writing. Apply it during Step 4.
 
 ### 3 — Plan the newsletter structure
 
@@ -51,28 +95,98 @@ Before writing, plan:
 - Which opening hook archetype fits the topic (see Style Guide)
 - The primary metaphor and which sections it will carry through
 - 3–5 natural Friction Points
-- The Toolscape: relevant open-source and COTS tools
-- Topic-specific section titles (never generic — "The Three Fault Lines" not "Section 2")
+- The Toolscape: relevant open-source and COTS tools (minimum 3 categories,
+  minimum 8 named tools)
+- Topic-specific section titles (never generic — "The Three Fault Lines" not
+  "Section 2")
+- Which related prior newsletters (from Step 1A) to cross-reference, and where
 
-### 4 — Write the newsletter
+### 4 — Check for filename collision, then write the newsletter
 
-Follow the Style Guide exactly. Target 4,000–5,500 words total.
-File: `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`
+**A. Check for existing file.**
+Construct the base filename: `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`
 
-### 5 — Update index and log
+Use Glob to check if this file exists. If it does, check for `-v2`, `-v3`, etc.
+and use the next available version suffix. Examples:
 
-Add the newsletter to `wiki/index.md` under the Newsletters section.
-Append to `wiki/log.md` with: topic, word count, wiki pages used, whether
-research was triggered.
+- First run → `newsletter-llm-wiki-2026-04-13.md`
+- Second run same day → `newsletter-llm-wiki-2026-04-13-v2.md`
+- Third run same day → `newsletter-llm-wiki-2026-04-13-v3.md`
+
+**B. Estimate word count before writing.**
+Using the section length targets in the Style Guide, estimate the planned word
+count. If the estimate falls outside 4,000–5,500 words, adjust section depths
+before writing — expand thin sections or trim over-allocated ones.
+
+**C. Write the newsletter.**
+Follow the Style Guide exactly. Apply the URL map from Step 2C throughout.
+Include at least 3 direct attributed quotes drawn from the original sources.
+Cross-reference related prior newsletters where relevant, using relative Markdown
+links: `[Issue Title](newsletter-slug.md)`.
+
+**D. Validate word count.**
+After writing, estimate the actual word count. If it falls outside 4,000–5,500
+words, revise before saving — expand thin sections or trim padding.
+
+**File:** `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>[-v<N>].md`
+
+### 5 — Update index, log, and back-link source wiki pages
+
+**A. Add the newsletter to `wiki/index.md`** under the Newsletters section.
+The Newsletters table has four columns: Page, Topic, Created, Key Argument.
+`Key Argument` is a single sentence capturing the newsletter's central thesis.
+
+**B. Back-link source wiki pages.**
+For each concept, entity, or synthesis page used as a source in this newsletter,
+add a "Featured In" entry to that page. Append to the page's Related Concepts or
+Related Entities section (or add a new `## Featured In` section if neither
+exists):
+
+```markdown
+## Featured In
+
+- [Newsletter Title](../newsletters/newsletter-slug.md) — YYYY-MM-DD
+```
+
+Use relative paths from the wiki page's location. This ensures every source page
+links back to every newsletter that drew from it.
+
+**C. Append to `wiki/log.md`** with: topic, filename (including version suffix if
+any), approximate word count, wiki pages used, whether research was triggered.
 
 ### 6 — Report
 
-Tell the user: newsletter saved to `<filepath>`, approximate word count, and
-whether the research skill was invoked to fill coverage gaps.
+Tell the user: newsletter saved to `<filepath>`, approximate word count, whether
+the research skill was invoked to fill coverage gaps, and how many wiki pages
+were back-linked.
 
 ---
 
 ## Style Guide
+
+### Frontmatter
+
+Every newsletter page uses this frontmatter:
+
+```yaml
+---
+title: "Newsletter Title"
+type: newsletter
+tags: [tag1, tag2, tag3, tag4, tag5]
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+sources: ["raw/source1.md", "raw/source2.md"]
+confidence: high | medium | low
+word_count: ~NNNN
+wiki_pages_used: ["concepts/page1.md", "entities/page2.md", "synthesis/page3.md"]
+---
+```
+
+`word_count` is an approximate integer (e.g., `~4850`).
+`wiki_pages_used` lists every wiki page read to write the newsletter — used by
+the back-linking step and for future cross-reference decisions.
+
+---
 
 ### Voice and Tone
 
@@ -87,6 +201,25 @@ whether the research skill was invoked to fill coverage gaps.
   embedded in the sentence: *"harness engineering — the discipline of building the
   runtime infrastructure that constrains, verifies, and observes an AI agent's
   behaviour in production"*
+
+---
+
+### Hyperlink Rules
+
+Apply the URL map from Step 2C throughout the newsletter.
+
+- **Always link** (on first substantive mention): named people, organizations,
+  commercial tools, open-source projects, research papers, gists, articles
+- **Never link**: generic category terms ("vector databases", "graph databases"),
+  adjectives, abstract concepts without a canonical URL
+- **First mention only** — link when the entity first appears in a substantive
+  context; do not repeat the link on every subsequent mention
+- **Inline Markdown syntax** — `[Andrej Karpathy](https://x.com/karpathy)`,
+  `[Neo4j](https://neo4j.com)`, `[LLM Wiki gist](https://gist.github.com/...)`
+- **arXiv papers** — link to the abstract page, not the PDF:
+  `[Title](https://arxiv.org/abs/XXXX.XXXXX) (arXiv:XXXX.XXXXX, Author et al., Year)`
+- **Omit rather than guess** — if the URL is uncertain, leave the entity unlinked;
+  a broken or wrong URL is worse than no link
 
 ---
 
@@ -123,6 +256,19 @@ timeframe ("For twenty years...") to establish how foundational the disruption i
 - Never introduce the concept name in the first paragraph — build stakes first
 - End the hook with a one-sentence thesis that states exactly what the newsletter argues
 - The primary metaphor should appear in or immediately after the hook
+
+---
+
+### Direct Quotes
+
+Every newsletter must include **at least 3 direct attributed quotes** drawn
+verbatim from the original source files or research log. Quotes must be:
+
+- Enclosed in quotation marks with full attribution: author name, source name,
+  date
+- Traceable to a specific line in the research log or raw source
+- Not paraphrased — if the exact wording cannot be confirmed in the source,
+  use indirect attribution ("Karpathy argues that...") instead of quotation marks
 
 ---
 
@@ -164,11 +310,13 @@ approach is — friction lands with context, not before it.
 
 Citations are inline — they follow the claim, not precede it.
 
-- **arXiv papers:** *"[Title]"* (arXiv:XXXX.XXXXX, Author et al., Year)
-- **Named experts:** Full name, role at organization inline:
-  *Phil Schmid of Hugging Face argues that...*
+- **arXiv papers:** *"[Title]"* ([arXiv:XXXX.XXXXX](https://arxiv.org/abs/XXXX.XXXXX), Author et al., Year)
+- **Named experts:** Full name hyperlinked, role at organization inline:
+  *[Phil Schmid](https://x.com/philschmid) of [Hugging Face](https://huggingface.co) argues that...*
 - **Companies/products:** Linked product name:
   *[Neo4j](https://neo4j.com) uses this pattern to...*
+- **Gists and informal sources:** Author hyperlinked, platform, date:
+  *[Andrej Karpathy](https://x.com/karpathy) published [a GitHub gist](https://gist.github.com/...) on...*
 - **No footnotes** — all citations inline or omitted
 - **No vague attribution** — "researchers found" is not a citation; name the paper
 
@@ -215,8 +363,8 @@ than "security risks." Include at least one threat that will surprise the reader
 
 ```
 **[Category Name]**
-- **Open Source:** [Tool] — [one-line purpose]. Use when [scenario].
-- **Commercial / COTS:** [Tool] — [one-line purpose]. Use when [scenario].
+- **Open Source:** [Tool](URL) — [one-line purpose]. Use when [scenario].
+- **Commercial / COTS:** [Tool](URL) — [one-line purpose]. Use when [scenario].
 ```
 
 4. Close with a convergence signal: what the existence of this tool market tells
@@ -225,8 +373,11 @@ than "security risks." Include at least one threat that will surprise the reader
 **Rules:**
 - No pricing
 - Frame by architectural fit, not vendor features
+- **Minimum 3 functional categories**
+- **Minimum 8 named tools total across all categories**
 - Minimum 2 open-source options per relevant category
 - Name specific tools — "graph databases" is not a tool; "Neo4j and Amazon Neptune" are
+- All tool names must be hyperlinked to their official site or GitHub repo
 
 ---
 
