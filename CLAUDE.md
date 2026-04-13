@@ -15,6 +15,7 @@ This is an LLM-maintained knowledge base on Signal Over Noise. The LLM writes an
 - `wiki/concepts/` — Concept, strategy, and framework pages.
 - `wiki/entities/` — Entity pages (people, tools, organizations, products — whatever "things" exist in your domain).
 - `wiki/synthesis/` — Comparison tables, decision frameworks, cross-cutting analyses.
+- `wiki/newsletters/` — Long-form newsletter issues generated from wiki content.
 - `wiki/journal/` — Research or session journal entries.
 - `wiki/presentations/` — Marp slide decks generated from wiki content.
 
@@ -31,7 +32,7 @@ Every wiki page uses this frontmatter and structure:
 ```yaml
 ---
 title: "Page Title"
-type: concept | entity | summary | synthesis
+type: concept | entity | summary | synthesis | newsletter
 tags: [tag1, tag2, tag3]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -71,6 +72,14 @@ confidence: high | medium | low
 - `## Analysis` — Cross-cutting insights
 - `## Recommendations` — When to prefer which approach
 - `## Pages Compared` — Links to all pages involved
+
+**Newsletter pages** (`wiki/newsletters/`):
+
+- Named `newsletter-<topic-slug>-<YYYY-MM-DD>.md`
+- Long-form (4,000–5,500 words), Signal Over Noise style
+- Masthead: `*Signal Over Noise | [Topic] | [YYYY-MM-DD]*`
+- Sections: Opening hook, Problem/Context (with comparison table), 2–3 deep analysis sections, Threats, Toolscape, Action Item, Closing Signal
+- Footer: `*Tags: #tag1 #tag2 ...*`
 
 ## Linking Conventions
 
@@ -223,6 +232,15 @@ The skill handles web search, source evaluation, content fetching, claim extract
 6. Add cross-links in both directions between all touched pages
 7. Update `wiki/index.md`
 8. Append to `wiki/log.md` with timestamp, topic, sources consulted count, and pages created/updated
+
+### Newsletter
+
+When the user says "newsletter [topic]":
+
+Invoke the `newsletter` skill with the topic as the argument:
+`Skill({ skill: "newsletter", args: "<topic>" })`
+
+The skill assesses wiki coverage, auto-invokes the `research` skill if coverage is insufficient, then writes a long-form newsletter to `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`. Once the skill completes, update `wiki/index.md` (add newsletter entry under the Newsletters section) and append to `wiki/log.md`.
 
 ## Rules
 

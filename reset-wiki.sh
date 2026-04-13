@@ -38,10 +38,10 @@ echo "  Cleared raw/"
 #    wiki/journal: also preserve template.md.
 # ---------------------------------------------------------------------------
 
-for dir in wiki/concepts wiki/entities wiki/summaries wiki/synthesis wiki/presentations; do
+for dir in wiki/concepts wiki/entities wiki/summaries wiki/synthesis wiki/newsletters wiki/presentations; do
   find "$dir" -name '*.md' -delete
 done
-echo "  Cleared wiki/concepts, entities, summaries, synthesis, presentations"
+echo "  Cleared wiki/concepts, entities, summaries, synthesis, newsletters, presentations"
 
 find wiki/journal -name '*.md' ! -name 'template.md' -delete
 echo "  Cleared wiki/journal (preserved template.md)"
@@ -79,11 +79,17 @@ Master catalog of all wiki pages. Every page in the wiki must have an entry here
 |------|--------|------------|---------|
 | <!-- entries added by LLM during ingest --> | | | |
 
-## Syntheses
+## Synthesis
 
 | Page | Pages Compared | Created |
 |------|----------------|---------|
 | <!-- entries added by LLM during ingest --> | | |
+
+## Newsletters
+
+| Page | Topic | Created |
+|------|-------|---------|
+| <!-- entries added by LLM during newsletter --> | | |
 
 ## Statistics
 
@@ -91,7 +97,8 @@ Master catalog of all wiki pages. Every page in the wiki must have an entry here
 - **Concepts**: 0
 - **Entities**: 0
 - **Summaries**: 0
-- **Syntheses**: 0
+- **Synthesis**: 0
+- **Newsletters**: 0
 - **Sources ingested**: 0
 - **High confidence**: 0
 - **Medium confidence**: 0

@@ -27,3 +27,4 @@ wiki/summaries/*.md
 wiki/synthesis/*.md
 wiki/journal/*.md
 !wiki/journal/template.md
+wiki/newsletters/*.md

@@ -40,7 +40,7 @@ npm start
 
 ## Using the Knowledge Compiler
 
-There are four operations. Type them in the chat with your LLM (Claude Code, Claude.ai, or any LLM that can read your repo).
+There are six operations. Type them in the chat with your LLM (Claude Code, Claude.ai, or any LLM that can read your repo).
 
 ### 1. Ingest
 
@@ -185,7 +185,40 @@ The LLM uses the `research` skill, which handles web search and source evaluatio
 
 ---
 
-### 5. Reset
+### 5. Newsletter
+
+**Trigger:** `newsletter <topic>`
+
+Transforms the wiki's accumulated knowledge on a topic into a compelling long-form newsletter in the Signal Over Noise style. If wiki coverage on the topic is insufficient, the LLM automatically invokes the `research` operation first — enriching the wiki as a side effect — then writes the newsletter.
+
+The LLM will:
+
+1. Check wiki coverage: look for 3+ substantive pages covering what the topic is, how it works, and its challenges or threats
+2. If coverage is insufficient: run the research workflow (web search → wiki pages) before proceeding
+3. Read original source files for direct quotes and specific citations
+4. Write a 4,000–5,500 word newsletter with: narrative hook, problem/context with comparison table, deep analysis sections, threats, toolscape (open-source and commercial tools), action item audit, and closing signal
+5. Save to `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`
+6. Update `wiki/index.md` and `wiki/log.md`
+
+**Examples:**
+
+```text
+newsletter "harness engineering"
+```
+
+```text
+newsletter "graph databases for agentic AI"
+```
+
+```text
+newsletter "LLM Wiki pattern"
+```
+
+The newsletter follows the Signal Over Noise voice: energetic, active, direct address, present-tense urgency, inline citations (arXiv IDs, author names), and named Friction Point callouts that explain why adoption is hard — not just technically but organizationally.
+
+---
+
+### 6. Reset
 
 **Trigger:** `./reset-wiki.sh`
 
@@ -198,7 +231,7 @@ Wipes all local wiki content and raw sources, then restores the five wiki root f
 The script will prompt for confirmation before doing anything. What it clears:
 
 - `raw/` — all files and subdirectories except `.gitkeep`
-- `wiki/concepts/`, `wiki/entities/`, `wiki/summaries/`, `wiki/synthesis/`, `wiki/presentations/` — all `.md` files
+- `wiki/concepts/`, `wiki/entities/`, `wiki/summaries/`, `wiki/synthesis/`, `wiki/newsletters/`, `wiki/presentations/` — all `.md` files
 - `wiki/journal/` — all `.md` files except `template.md`
 - `wiki/index.md`, `wiki/log.md`, `wiki/analytics.md`, `wiki/dashboard.md`, `wiki/flashcards.md` — overwritten with pristine template content
 
@@ -433,6 +466,7 @@ The LLM follows these rules when writing pages — useful to know when reading t
     ├── concepts/                  # Concept and framework pages (not in git)
     ├── entities/                  # People, tools, organizations, etc. (not in git)
     ├── synthesis/                 # Cross-cutting analyses and comparisons (not in git)
+    ├── newsletters/               # Long-form newsletter issues (not in git)
     ├── journal/                   # Research/session journal entries (not in git)
     │   └── template.md
     └── presentations/             # Marp slide decks (not in git)
