@@ -19,7 +19,7 @@ src/        Graph viewer — Node.js server + browser frontend
 
 ## Quick Start
 
-**Prerequisites:** Node.js v18 or later.
+**Prerequisites:** Node.js v18 or later. Python 3.8+ and pip (required for URL ingestion only).
 
 ```bash
 # From the repo root
@@ -44,11 +44,11 @@ There are three operations. Type them in the chat with your LLM (Claude Code, Cl
 
 ### 1. Ingest
 
-**Trigger:** `ingest raw/<filename>`
+**Trigger:** `ingest <source>` — where source is a local file path or a URL
 
-Drops a raw source into `raw/` and tells the LLM to process it. The LLM will:
+The LLM will:
 
-1. Read the source file in full
+1. Read the source in full (fetching it first if it is a URL — see below)
 2. Create `wiki/summaries/<source-slug>.md`
 3. Identify every concept, entity, and strategy mentioned
 4. Create a new page for each concept/entity that doesn't have one yet; update existing pages with new information
@@ -57,19 +57,27 @@ Drops a raw source into `raw/` and tells the LLM to process it. The LLM will:
 7. Append a timestamped entry to `wiki/log.md`
 8. Flag any contradictions with existing wiki content
 
-**Examples:**
+**Local file examples:**
 
 ```text
 ingest raw/podcast-transcript-episode-42.txt
 ```
 
 ```text
-ingest raw/research-paper-attention-mechanisms.pdf
+I just added raw/q3-earnings-call.txt — please ingest it
+```
+
+**URL examples:**
+
+```text
+ingest https://example.com/article-about-graph-databases
 ```
 
 ```text
-I just added raw/q3-earnings-call.txt — please ingest it
+ingest https://signalovernoise.karlekar.cloud/issue-007.html
 ```
+
+When given a URL, the LLM automatically invokes the `ingest-url` skill, which runs `src/tools/fetch_md.py` to download the page and its images, save the result to `raw/`, and then proceeds with the standard ingest steps above. Images are saved to `raw/images/<slug>/` and embedded with relative paths. No API calls or external services are used — pure local Python.
 
 After ingestion you will see new or updated files in `wiki/summaries/`, `wiki/concepts/`, `wiki/entities/`, and possibly `wiki/synthesis/`. Click **Refresh** in the graph viewer to see the changes.
 
@@ -327,12 +335,18 @@ The LLM follows these rules when writing pages — useful to know when reading t
 .
 ├── CLAUDE.md                      # Schema — the LLM's instructions
 ├── start.sh                       # Convenience launcher
-├── raw/                           # Your source documents (immutable)
+├── raw/                           # Your source documents (immutable, not in git)
+├── .claude/
+│   └── commands/
+│       └── ingest-url.md          # Project skill — fetch URL and save to raw/
 ├── docs/
 │   ├── specification.md           # Full software requirements (EARS format)
 │   └── tasks.md                   # Implementation task list
 ├── src/
 │   ├── package.json
+│   ├── tools/
+│   │   ├── fetch_md.py            # HTML-to-Markdown converter for URL ingest
+│   │   └── requirements.txt       # Python deps: markdownify, beautifulsoup4
 │   ├── server/
 │   │   └── index.js               # Express server — file API + upload endpoint
 │   └── public/
@@ -357,14 +371,16 @@ The LLM follows these rules when writing pages — useful to know when reading t
     ├── dashboard.md               # Dataview dashboard (Obsidian)
     ├── analytics.md               # Charts View analytics (Obsidian)
     ├── flashcards.md              # Spaced repetition cards
-    ├── summaries/                 # One page per source document
-    ├── concepts/                  # Concept and framework pages
-    ├── entities/                  # People, tools, organizations, etc.
-    ├── synthesis/                 # Cross-cutting analyses and comparisons
-    ├── journal/                   # Research/session journal entries
+    ├── summaries/                 # One page per source document (not in git)
+    ├── concepts/                  # Concept and framework pages (not in git)
+    ├── entities/                  # People, tools, organizations, etc. (not in git)
+    ├── synthesis/                 # Cross-cutting analyses and comparisons (not in git)
+    ├── journal/                   # Research/session journal entries (not in git)
     │   └── template.md
-    └── presentations/             # Marp slide decks
+    └── presentations/             # Marp slide decks (not in git)
 ```
+
+> **Note:** `raw/` and all `wiki/` subdirectory content is excluded from git — these are LLM-generated or user-collected files that live only on your machine. The repo tracks infrastructure only: source code, schema, skills, and the wiki root files (`index.md`, `log.md`, etc.) at their initial state.
 
 ---
 
