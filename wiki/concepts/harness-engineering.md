@@ -84,6 +84,9 @@ A tool call fails three layers deep in a transitive dependency chain. The agent 
 - [Agent Maturity Arc](agent-maturity-arc.md) — harness engineering is Phase 3
 - [Vibe Coding](vibe-coding.md) — Phase 1; the absence of any harness thinking
 - [EARS Notation](ears-notation.md) — produces machine-testable acceptance criteria that the verification layer can enforce
+- [Graph Database](graph-database.md) — the memory substrate for the harness's context management component; enables persistent, queryable agent memory across sessions and agent swarms
+- [POLE Model (POLE+O+D)](pole-model.md) — the entity framework that structures what the graph database stores; gives context management a schema for operational intelligence
+- [Graph RAG](graph-rag.md) — the retrieval pattern that makes graph-backed context management operationally useful; replaces "stuff the prompt with everything" with deliberate subgraph injection
 
 ## Sources
 

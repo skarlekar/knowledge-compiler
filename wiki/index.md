@@ -16,6 +16,9 @@ Master catalog of all wiki pages. Every page in the wiki must have an entry here
 | [Agent Maturity Arc](concepts/agent-maturity-arc.md) | agentic-ai, enterprise, specification, harness-engineering | high | 2026-04-13 |
 | [Agent Behavioral Contracts](concepts/agent-behavioral-contracts.md) | agentic-ai, specification, reliability, harness-engineering | high | 2026-04-13 |
 | [EARS Notation](concepts/ears-notation.md) | specification, agentic-ai, reliability | high | 2026-04-13 |
+| [POLE Model (POLE+O+D)](concepts/pole-model.md) | enterprise, knowledge-graph, compliance, agentic-ai | high | 2026-04-13 |
+| [Graph Database](concepts/graph-database.md) | agentic-ai, infrastructure, enterprise, knowledge-graph | high | 2026-04-13 |
+| [Graph RAG](concepts/graph-rag.md) | agentic-ai, knowledge-graph, infrastructure | high | 2026-04-13 |
 
 ## Entities
 
@@ -32,8 +35,9 @@ Master catalog of all wiki pages. Every page in the wiki must have an entry here
 | Page | Source | Key Topics | Created |
 | ---- | ------ | ---------- | ------- |
 | [Signal Over Noise Issue #7](summaries/signal-over-noise-issue-007.md) | raw/signal-over-noise-issue-007.txt | harness engineering, SDD, vibe coding, agent maturity arc, EARS notation | 2026-04-13 |
+| [From Corkboard to Case File (Longform, March 2026)](summaries/longform-2026-03-21-detective-guide-enterprise-intelligence.md) | raw/longform-2026-03-21-detective-guide-enterprise-intelligence.md | POLE+O+D, graph databases, Graph RAG, agentic memory | 2026-04-13 |
 
-## Syntheses
+## Synthesis
 
 | Page | Pages Compared | Created |
 | ---- | -------------- | ------- |
@@ -41,12 +45,12 @@ Master catalog of all wiki pages. Every page in the wiki must have an entry here
 
 ## Statistics
 
-- **Total pages**: 12
-- **Concepts**: 6
+- **Total pages**: 16
+- **Concepts**: 9
 - **Entities**: 5
-- **Summaries**: 1
-- **Syntheses**: 0
-- **Sources ingested**: 1
-- **High confidence**: 11
+- **Summaries**: 2
+- **Synthesis**: 0
+- **Sources ingested**: 2
+- **High confidence**: 15
 - **Medium confidence**: 1
 - **Low confidence**: 0

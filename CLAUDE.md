@@ -43,11 +43,13 @@ confidence: high | medium | low
 ### Required Sections by Page Type
 
 **Summary pages** (`wiki/summaries/`):
+
 - `## Key Points` — Bulleted list of main claims/ideas
 - `## Relevant Concepts` — Links to concept pages this source touches
 - `## Source Metadata` — Type of source, author/speaker, date, URL or identifier
 
 **Concept pages** (`wiki/concepts/`):
+
 - `## Definition` — One-paragraph plain-English definition
 - `## How It Works` — Mechanics, process, or structure of the concept
 - `## Key Parameters` — Important variables, dimensions, or factors
@@ -57,12 +59,14 @@ confidence: high | medium | low
 - `## Sources` — Which raw sources inform this page
 
 **Entity pages** (`wiki/entities/`):
+
 - `## Overview` — What this entity is
 - `## Characteristics` — Key properties, attributes, structure
 - `## Common Strategies` — Links to concept pages for strategies or methods associated with this entity
 - `## Related Entities` — Links to related entity pages
 
 **Synthesis pages** (`wiki/synthesis/`):
+
 - `## Comparison` — Table or structured comparison
 - `## Analysis` — Cross-cutting insights
 - `## Recommendations` — When to prefer which approach
@@ -105,6 +109,17 @@ confidence: high | medium | low
 ### Ingest
 
 When the user says "ingest [source]" or adds a file to `raw/`:
+
+**If [source] is a URL (begins with `http://` or `https://`):**
+
+- Invoke the `ingest-url` skill with the URL as the argument:
+  `Skill({ skill: "ingest-url", args: "<url>" })`
+- The skill downloads the page and its images to `raw/` and returns the saved filepath.
+- Use that filepath as [source] for steps 1–8 below.
+
+**If [source] is a local file already in `raw/`:**
+
+- Proceed directly to step 1.
 
 1. Read the raw source completely
 2. Create `wiki/summaries/<source-slug>.md` with full summary

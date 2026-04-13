@@ -71,7 +71,7 @@ ingest raw/research-paper-attention-mechanisms.pdf
 I just added raw/q3-earnings-call.txt — please ingest it
 ```
 
-After ingestion you will see new or updated files in `wiki/summaries/`, `wiki/concepts/`, `wiki/entities/`, and possibly `wiki/syntheses/`. Click **Refresh** in the graph viewer to see the changes.
+After ingestion you will see new or updated files in `wiki/summaries/`, `wiki/concepts/`, `wiki/entities/`, and possibly `wiki/synthesis/`. Click **Refresh** in the graph viewer to see the changes.
 
 ---
 
@@ -84,7 +84,7 @@ The LLM searches the wiki and synthesises an answer with citations. It will:
 1. Read `wiki/index.md` to identify relevant pages
 2. Read those pages
 3. Synthesise a cited answer using wiki links
-4. If the answer reveals new cross-cutting insight: create a synthesis page in `wiki/syntheses/` and update the index and log
+4. If the answer reveals new cross-cutting insight: create a synthesis page in `wiki/synthesis/` and update the index and log
 
 **Examples:**
 
@@ -104,7 +104,7 @@ Summarise everything the wiki knows about vector embeddings and how they relate 
 What strategies does the wiki recommend for handling high-cardinality graphs?
 ```
 
-The LLM answers inline and, when appropriate, writes a new `wiki/syntheses/` page capturing the insight for future reference.
+The LLM answers inline and, when appropriate, writes a new `wiki/synthesis/` page capturing the insight for future reference.
 
 ---
 
@@ -236,7 +236,7 @@ Links to concept pages for methods associated with this entity
 Links to related entity pages
 ```
 
-### Synthesis pages (`wiki/syntheses/`)
+### Synthesis pages (`wiki/synthesis/`)
 
 Cross-cutting comparisons and analyses. Created when a query reveals novel insight, or on demand.
 
@@ -360,7 +360,7 @@ The LLM follows these rules when writing pages — useful to know when reading t
     ├── summaries/                 # One page per source document
     ├── concepts/                  # Concept and framework pages
     ├── entities/                  # People, tools, organizations, etc.
-    ├── syntheses/                 # Cross-cutting analyses and comparisons
+    ├── synthesis/                 # Cross-cutting analyses and comparisons
     ├── journal/                   # Research/session journal entries
     │   └── template.md
     └── presentations/             # Marp slide decks
