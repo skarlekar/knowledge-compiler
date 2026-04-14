@@ -9,6 +9,8 @@ Thumbs.db
 .env.local
 .env.*.local
 
+vaults.json
+
 __pycache__/
 
 settings.local.json

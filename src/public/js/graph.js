@@ -63,20 +63,24 @@ const GraphBuilder = (() => {
 
   /**
    * Build the full graph model from the wiki API.
-   * Returns { nodes: Map<path, node>, edges: [], nodeList: [] }
+   * @param {string|null} vaultId — optional vault ID; if provided, appended as ?vault=<id>
+   * Returns { nodes: Map<path, node>, edges: [], nodeList: [], vaultId }
    */
-  async function build() {
+  async function build(vaultId) {
     // TASK-008 — Fetch file list
-    const res = await fetch('/api/wiki/files');
+    const vaultParam = vaultId ? `?vault=${encodeURIComponent(vaultId)}` : '';
+    const res = await fetch(`/api/wiki/files${vaultParam}`);
     const filePaths = await res.json();
 
-    if (!filePaths.length) return { nodes: new Map(), edges: [], nodeList: [] };
+    if (!filePaths.length) return { nodes: new Map(), edges: [], nodeList: [], vaultId };
 
     // Fetch all file contents in parallel
     const fileContents = await Promise.all(
       filePaths.map(async (fp) => {
         try {
-          const r = await fetch(`/api/wiki/file?path=${encodeURIComponent(fp)}`);
+          const sep = vaultId ? '&' : '';
+          const vp = vaultId ? `${sep}vault=${encodeURIComponent(vaultId)}` : '';
+          const r = await fetch(`/api/wiki/file?path=${encodeURIComponent(fp)}${vp}`);
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           const text = await r.text();
           return { path: fp, content: text, error: null };
@@ -148,7 +152,7 @@ const GraphBuilder = (() => {
     }
 
     const nodeList = Array.from(nodes.values());
-    return { nodes, edges, nodeList };
+    return { nodes, edges, nodeList, vaultId };
   }
 
   return { build, parseFrontmatter, extractLinks };

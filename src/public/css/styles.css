@@ -31,11 +31,43 @@ html, body {
   z-index: 100;
 }
 
-.toolbar-left { flex: 0 0 auto; }
+.toolbar-left { flex: 0 0 auto; display: flex; align-items: center; }
 .toolbar-center { flex: 1 1 auto; display: flex; align-items: center; gap: 12px; }
 .toolbar-right { flex: 0 0 auto; display: flex; gap: 6px; }
 
 .app-title { font-size: 16px; font-weight: 600; white-space: nowrap; }
+
+/* --- Vault selector -------------------------------------------------------- */
+.vault-selector-container {
+  margin-left: 12px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vault-selector {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  max-width: 200px;
+  text-overflow: ellipsis;
+  outline: none;
+  transition: background 0.15s;
+}
+.vault-selector:hover { background: rgba(255,255,255,0.25); }
+.vault-selector option { color: #222; background: #fff; }
+
+.vault-name {
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+}
 
 .toolbar-btn {
   background: rgba(255,255,255,0.12);

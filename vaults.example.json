@@ -1,0 +1,9 @@
+[
+  {
+    "id": "signal-over-noise",
+    "name": "Signal Over Noise",
+    "template": "research",
+    "path": "/absolute/path/to/knowledge-compiler",
+    "purpose": "LLM-maintained knowledge base on Signal Over Noise"
+  }
+]

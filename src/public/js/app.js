@@ -29,8 +29,65 @@ function showToast(message, type = 'info', durationMs = 3000) {
 }
 
 (async function main() {
-  // --- Build graph model ---
-  let data = await GraphBuilder.build();
+
+  // -------------------------------------------------------------------------
+  // Vault setup — fetch registry, populate selector, determine active vault
+  // -------------------------------------------------------------------------
+  let activeVaultId = null;
+
+  const vaultSelectorContainer = document.getElementById('vault-selector-container');
+  const vaultSelect = document.getElementById('vault-select');
+  const vaultNameEl = document.getElementById('vault-name');
+
+  let vaults = [];
+  try {
+    const vr = await fetch('/api/vaults');
+    vaults = await vr.json();
+  } catch (err) {
+    console.warn('Could not fetch vault registry:', err.message);
+    vaults = [];
+  }
+
+  if (vaults.length === 0) {
+    // Legacy mode — hide vault selector entirely
+    vaultSelectorContainer.classList.add('hidden');
+    activeVaultId = null;
+  } else {
+    const stored = localStorage.getItem('kc-active-vault');
+    const storedVault = vaults.find(v => v.id === stored);
+
+    if (stored && !storedVault) {
+      const firstName = vaults[0].name;
+      showToast(`Vault '${stored}' no longer registered. Switched to ${firstName}.`, 'info', 5000);
+    }
+
+    activeVaultId = storedVault ? storedVault.id : vaults[0].id;
+
+    // Populate selector options
+    vaultSelect.textContent = '';
+    for (const v of vaults) {
+      const opt = document.createElement('option');
+      opt.value = v.id;
+      opt.textContent = v.name;
+      vaultSelect.appendChild(opt);
+    }
+    vaultSelect.value = activeVaultId;
+
+    if (vaults.length === 1) {
+      vaultSelect.classList.add('hidden');
+      vaultNameEl.textContent = vaults[0].name;
+    } else {
+      vaultNameEl.classList.add('hidden');
+    }
+
+    const activeVaultName = vaults.find(v => v.id === activeVaultId)?.name;
+    if (activeVaultName) document.title = `Knowledge Compiler — ${activeVaultName}`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Build initial graph
+  // -------------------------------------------------------------------------
+  let data = await GraphBuilder.build(activeVaultId);
 
   // NFR-REL-001 — empty wiki
   if (!data.nodeList.length) {
@@ -63,16 +120,9 @@ function showToast(message, type = 'info', durationMs = 3000) {
   }
 
   // --- Initialize modules ---
-  // Content renderer needs graph nodes & navigate callback
-  ContentRenderer.init(data.nodes, navigateTo);
-
-  // Visualization needs graph data & click callback
+  ContentRenderer.init(data.nodes, navigateTo, activeVaultId);
   Visualization.init(data, navigateTo);
-
-  // Navigation needs nodes & navigate callback
   Navigation.init(data.nodes, navigateTo);
-
-  // Search needs node list, navigate, and filter callbacks
   Search.init(data.nodeList, navigateTo, (hiddenTypes) => {
     Visualization.applyFilter(hiddenTypes);
   });
@@ -80,6 +130,47 @@ function showToast(message, type = 'info', durationMs = 3000) {
   // --- Default selection — TASK-022  FR-GV-006 ---
   const defaultNode = data.nodes.has('index.md') ? 'index.md' : data.nodeList[0].id;
   navigateTo(defaultNode);
+
+  // -------------------------------------------------------------------------
+  // Vault switching
+  // -------------------------------------------------------------------------
+  async function switchToVault(newVaultId) {
+    const newVaultName = vaults.find(v => v.id === newVaultId)?.name || newVaultId;
+    showToast(`Switching to ${newVaultName}…`, 'info', 2000);
+    activeVaultId = newVaultId;
+    localStorage.setItem('kc-active-vault', newVaultId);
+    document.title = `Knowledge Compiler — ${newVaultName}`;
+    try {
+      data = await GraphBuilder.build(activeVaultId);
+      if (!data.nodeList.length) {
+        document.getElementById('panels').classList.add('hidden');
+        document.getElementById('empty-message').classList.remove('hidden');
+        showToast(`${newVaultName} — no wiki files found.`, 'info');
+        return;
+      }
+      document.getElementById('panels').classList.remove('hidden');
+      document.getElementById('empty-message').classList.add('hidden');
+      ContentRenderer.init(data.nodes, navigateTo, activeVaultId);
+      Visualization.destroy();
+      Visualization.init(data, navigateTo);
+      Navigation.init(data.nodes, navigateTo);
+      Search.init(data.nodeList, navigateTo, (hiddenTypes) => {
+        Visualization.applyFilter(hiddenTypes);
+      });
+      const indexNode = data.nodes.has('index.md') ? 'index.md' : data.nodeList[0].id;
+      navigateTo(indexNode);
+      showToast(`Switched to ${newVaultName} — ${data.nodeList.length} nodes, ${data.edges.length} edges`, 'success');
+    } catch (err) {
+      console.error('Vault switch failed:', err);
+      showToast('Vault switch failed: ' + err.message, 'error', 5000);
+    }
+  }
+
+  if (vaults.length > 1) {
+    vaultSelect.addEventListener('change', () => {
+      switchToVault(vaultSelect.value);
+    });
+  }
 
   // --- Refresh — TASK-058, TASK-059, TASK-060  FR-RF-001..003 ---
   const btnRefresh = document.getElementById('btn-refresh');
@@ -95,8 +186,8 @@ function showToast(message, type = 'info', durationMs = 3000) {
     try {
       const previousActive = activeNodeId;
 
-      // Re-build graph model
-      data = await GraphBuilder.build();
+      // Re-build graph model (preserve vault context)
+      data = await GraphBuilder.build(activeVaultId);
 
       if (!data.nodeList.length) {
         document.getElementById('panels').classList.add('hidden');
@@ -110,7 +201,7 @@ function showToast(message, type = 'info', durationMs = 3000) {
       document.getElementById('empty-message').classList.add('hidden');
 
       // Re-initialize modules with new data
-      ContentRenderer.init(data.nodes, navigateTo);
+      ContentRenderer.init(data.nodes, navigateTo, activeVaultId);
       Visualization.destroy();
       Visualization.init(data, navigateTo);
 
@@ -153,7 +244,8 @@ function showToast(message, type = 'info', durationMs = 3000) {
         const formData = new FormData();
         formData.append('file', file);
 
-        const res = await fetch('/api/raw/upload', {
+        const vaultParam = activeVaultId ? `?vault=${encodeURIComponent(activeVaultId)}` : '';
+        const res = await fetch(`/api/raw/upload${vaultParam}`, {
           method: 'POST',
           body: formData,
         });

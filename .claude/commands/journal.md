@@ -26,18 +26,25 @@ Session description (optional): $ARGUMENTS
 
 ## Steps
 
-### 1 — Determine session scope
+### 1 — Determine vault type and session scope
 
-From the current conversation context, identify:
+**A. Read the active vault's `CLAUDE.md`** to determine the vault type:
 
-- **Session type**: `query` | `research` | `ingest` | `newsletter` | `lint` | `mixed`
+- If the Directory Layout lists `wiki/concepts/` and `wiki/entities/` → **research** vault
+- If it lists `wiki/classes/` and `wiki/functions/` → **code-analysis** vault
+
+This determines which page types to reference in `wiki_pages_consulted` and which session types are valid.
+
+**B. From the current conversation context, identify:**
+
+- **Session type**:
+  - Research vault: `query` | `research` | `ingest` | `newsletter` | `lint` | `mixed`
+  - Code-analysis vault: `analyze` | `query` | `lint` | `mixed`
 - **Starting question or goal**: what prompted this session
-- **Wiki pages consulted**: every wiki page read during this session
+- **Wiki pages consulted**: every wiki page read during this session (use the vault type's page type directories — e.g., `concepts/` for research, `classes/` for code-analysis)
 - **Wiki pages created or updated**: every wiki page written or modified
-- **Key decisions**: any judgment calls worth recording — what was uncertain, what
-  was ambiguous, what alternatives were considered
-- **Gaps and follow-up questions**: anything unresolved, contested, or worth
-  investigating next
+- **Key decisions**: any judgment calls worth recording
+- **Gaps and follow-up questions**: anything unresolved
 
 If `$ARGUMENTS` is provided, use it as the session description and derive the
 slug from it (e.g., `"LLM Wiki research"` → `llm-wiki-research`).

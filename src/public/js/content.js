@@ -12,6 +12,7 @@ const ContentRenderer = (() => {
   let graphNodes = null;     // Map<path, node>
   let onNavigate = null;     // callback(nodeId)
   let _currentRenderNode = '';   // tracks active node for image path resolution
+  let _activeVaultId = null;     // vault ID for image API requests
 
   // ── Image path resolution ─────────────────────────────────────────────────
   // Rewrites relative <img src> paths to /api/wiki/image?path=... during
@@ -26,7 +27,8 @@ const ContentRenderer = (() => {
           src.startsWith('/') || src.startsWith('data:')) return;
       // Resolve wiki-root-relative path, then rewrite to API URL
       const wikiPath = resolveLink(_currentRenderNode, src);
-      node.setAttribute('src', '/api/wiki/image?path=' + encodeURIComponent(wikiPath));
+      const vaultSuffix = _activeVaultId ? `&vault=${encodeURIComponent(_activeVaultId)}` : '';
+      node.setAttribute('src', '/api/wiki/image?path=' + encodeURIComponent(wikiPath) + vaultSuffix);
     });
   }
 
@@ -59,11 +61,15 @@ const ContentRenderer = (() => {
   }
 
   /**
-   * Initialize with graph data and navigation callback.
+   * Initialize with graph data, navigation callback, and optional vault ID.
+   * @param {Map} nodes
+   * @param {Function} navigateCallback
+   * @param {string|null} vaultId — vault ID used for image API requests
    */
-  function init(nodes, navigateCallback) {
+  function init(nodes, navigateCallback, vaultId) {
     graphNodes = nodes;
     onNavigate = navigateCallback;
+    _activeVaultId = vaultId || null;
   }
 
   /**

@@ -2,34 +2,51 @@
    utils.js — Shared constants and helpers
    ========================================================================== */
 
-// TASK-019  FR-GV-003 — Node type colour map (11 types)
+// TASK-019  FR-GV-003 — Node type colour map (research + code-analysis types)
 const TYPE_COLOURS = {
-  concept:      '#4A90D9',
-  entity:       '#50B86C',
-  summary:      '#E8913A',
-  synthesis:    '#9B59B6',
-  journal:      '#17A2B8',
-  presentation: '#E85D75',
-  index:        '#F1C40F',
-  log:          '#6C757D',
-  dashboard:    '#6610F2',
-  flashcards:   '#E83E8C',
-  other:        '#95A5A6'
+  // Research vault types
+  concept:        '#4A90D9',
+  entity:         '#50B86C',
+  summary:        '#E8913A',
+  synthesis:      '#9B59B6',
+  journal:        '#17A2B8',
+  presentation:   '#E85D75',
+  index:          '#F1C40F',
+  log:            '#6C757D',
+  dashboard:      '#6610F2',
+  flashcards:     '#E83E8C',
+  // Code-analysis vault types
+  class:          '#2ECC71',
+  function:       '#3498DB',
+  api:            '#E67E22',
+  library:        '#1ABC9C',
+  pattern:        '#8E44AD',
+  'anti-pattern': '#E74C3C',
+  module:         '#F39C12',
+  // Fallback
+  other:          '#95A5A6'
 };
 
 // TASK-055  NFR-USE-004 — Label colour for WCAG 4.5:1 contrast
 const TYPE_LABEL_COLOURS = {
-  concept:      '#fff',
-  entity:       '#fff',
-  summary:      '#fff',
-  synthesis:    '#fff',
-  journal:      '#fff',
-  presentation: '#fff',
-  index:        '#000',   // Gold needs dark text
-  log:          '#fff',
-  dashboard:    '#fff',
-  flashcards:   '#fff',
-  other:        '#fff'
+  concept:        '#fff',
+  entity:         '#fff',
+  summary:        '#fff',
+  synthesis:      '#fff',
+  journal:        '#fff',
+  presentation:   '#fff',
+  index:          '#000',   // Gold needs dark text
+  log:            '#fff',
+  dashboard:      '#fff',
+  flashcards:     '#fff',
+  class:          '#fff',
+  function:       '#fff',
+  api:            '#fff',
+  library:        '#fff',
+  pattern:        '#fff',
+  'anti-pattern': '#fff',
+  module:         '#fff',
+  other:          '#fff'
 };
 
 /**
@@ -45,7 +62,18 @@ function inferType(filePath, frontmatterType) {
   if (parts.length >= 2) {
     const dir = parts[parts.length - 2];     // parent folder name
     if (TYPE_COLOURS[dir]) return dir;
-    // Handle plural directory names (concepts -> concept, entities -> entity, etc.)
+    // Explicit mappings for code-analysis plural directories
+    const PLURAL_MAP = {
+      'classes':       'class',
+      'functions':     'function',
+      'apis':          'api',
+      'libraries':     'library',
+      'patterns':      'pattern',
+      'anti-patterns': 'anti-pattern',
+      'modules':       'module',
+    };
+    if (PLURAL_MAP[dir]) return PLURAL_MAP[dir];
+    // Handle generic plural directory names (concepts -> concept, entities -> entity, etc.)
     const singular = dir.replace(/s$/, '').replace(/ie$/, 'y');
     if (TYPE_COLOURS[singular]) return singular;
   }

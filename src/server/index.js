@@ -10,12 +10,62 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Resolve wiki directory — two levels up from src/server/
-const WIKI_DIR = path.resolve(__dirname, '..', '..', 'wiki');
-const RAW_DIR = path.resolve(__dirname, '..', '..', 'raw');
+// Legacy single-vault directories (used when no vaults.json or in legacy fallback mode)
+const LEGACY_ROOT = path.resolve(__dirname, '..', '..');
+const LEGACY_WIKI_DIR = path.join(LEGACY_ROOT, 'wiki');
+const LEGACY_RAW_DIR = path.join(LEGACY_ROOT, 'raw');
+
+// --- Vault registry ---
+const VAULTS_JSON_PATH = path.join(LEGACY_ROOT, 'vaults.json');
+let _vaultRegistry = null;   // cached after first load
+
+async function loadVaultRegistry() {
+  if (_vaultRegistry !== null) return _vaultRegistry;
+  try {
+    const raw = await readFile(VAULTS_JSON_PATH, 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw new Error('vaults.json must be a JSON array');
+    _vaultRegistry = parsed;
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.warn('[VAULTS] Could not load vaults.json:', err.message);
+    }
+    _vaultRegistry = [];
+  }
+  return _vaultRegistry;
+}
+
+/**
+ * Resolve the vault root path for a given vault ID.
+ * - If vaultId is provided, look it up in the registry.
+ * - If no vaultId, return the first vault's path, or fall back to LEGACY_ROOT.
+ * Throws a 404-style error if the vault ID is unknown.
+ */
+async function resolveVaultRoot(vaultId) {
+  const registry = await loadVaultRegistry();
+  if (vaultId) {
+    const vault = registry.find(v => v.id === vaultId);
+    if (!vault) throw Object.assign(new Error(`Unknown vault: ${vaultId}`), { status: 404 });
+    return vault.path;
+  }
+  if (registry.length > 0) return registry[0].path;
+  return LEGACY_ROOT;
+}
 
 // --- Static files ---
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// --- API: Vault registry (client receives id/name/template/purpose — path is stripped) ---
+app.get('/api/vaults', async (_req, res) => {
+  try {
+    const registry = await loadVaultRegistry();
+    const safe = registry.map(({ id, name, template, purpose }) => ({ id, name, template, purpose }));
+    res.json(safe);
+  } catch (err) {
+    console.error('Vault registry error:', err);
+    res.json([]);
+  }
+});
 
 // --- API: List all .md files recursively ---
 // TASK-005  FR-GC-001
@@ -34,15 +84,16 @@ async function discoverFiles(dir, base) {
   return files;
 }
 
-app.get('/api/wiki/files', async (_req, res) => {
+app.get('/api/wiki/files', async (req, res) => {
   try {
-    const files = await discoverFiles(WIKI_DIR, '');
+    const vaultRoot = await resolveVaultRoot(req.query.vault);
+    const wikiDir = path.join(vaultRoot, 'wiki');
+    const files = await discoverFiles(wikiDir, '');
     res.json(files);
   } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: err.message });
     // NFR-REL-001 — empty wiki or missing directory
-    if (err.code === 'ENOENT') {
-      return res.json([]);
-    }
+    if (err.code === 'ENOENT') return res.json([]);
     console.error('File discovery error:', err);
     res.status(500).json({ error: err.message });
   }
@@ -56,16 +107,20 @@ app.get('/api/wiki/file', async (req, res) => {
     return res.status(400).json({ error: 'Missing "path" query parameter.' });
   }
 
-  // Path-traversal prevention
-  const resolved = path.resolve(WIKI_DIR, relPath);
-  if (!resolved.startsWith(WIKI_DIR)) {
-    return res.status(403).json({ error: 'Access denied.' });
-  }
-
   try {
+    const vaultRoot = await resolveVaultRoot(req.query.vault);
+    const wikiDir = path.join(vaultRoot, 'wiki');
+
+    // Path-traversal prevention
+    const resolved = path.resolve(wikiDir, relPath);
+    if (!resolved.startsWith(wikiDir + path.sep) && resolved !== wikiDir) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
     const content = await readFile(resolved, 'utf-8');
     res.type('text/plain').send(content);
   } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: err.message });
     // NFR-REL-003
     console.error(`File read error [${relPath}]:`, err.message);
     res.status(404).json({ error: `Unable to load file: ${relPath}. ${err.message}` });
@@ -80,15 +135,17 @@ app.get('/api/wiki/image', async (req, res) => {
     return res.status(400).json({ error: 'Missing "path" query parameter.' });
   }
 
-  const IMAGES_DIR = path.resolve(WIKI_DIR, 'images');
-  const resolved = path.resolve(WIKI_DIR, relPath);
-
-  // Path-traversal prevention — must stay inside wiki/images/
-  if (!resolved.startsWith(IMAGES_DIR + '/')) {
-    return res.status(403).json({ error: 'Access denied.' });
-  }
-
   try {
+    const vaultRoot = await resolveVaultRoot(req.query.vault);
+    const wikiDir = path.join(vaultRoot, 'wiki');
+    const imagesDir = path.join(wikiDir, 'images');
+    const resolved = path.resolve(wikiDir, relPath);
+
+    // Path-traversal prevention — must stay inside wiki/images/
+    if (!resolved.startsWith(imagesDir + path.sep)) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
     const data = await readFile(resolved);
     const ext = path.extname(relPath).toLowerCase();
     const MIME = {
@@ -101,6 +158,7 @@ app.get('/api/wiki/image', async (req, res) => {
     };
     res.type(MIME[ext] || 'application/octet-stream').send(data);
   } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: err.message });
     res.status(404).json({ error: `Image not found: ${relPath}` });
   }
 });
@@ -121,7 +179,14 @@ app.post('/api/raw/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Invalid filename.' });
     }
 
-    const destPath = path.join(RAW_DIR, safeName);
+    const vaultRoot = await resolveVaultRoot(req.query.vault);
+    const rawDir = path.join(vaultRoot, 'raw');
+
+    // Path-traversal prevention — verify destination stays within vault's raw/
+    const destPath = path.resolve(rawDir, safeName);
+    if (!destPath.startsWith(rawDir + path.sep) && destPath !== rawDir) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
 
     // FR-UP-002 — conflict prevention
     try {
@@ -136,6 +201,7 @@ app.post('/api/raw/upload', upload.single('file'), async (req, res) => {
     console.log(`Uploaded: raw/${safeName} (${req.file.size} bytes)`);
     res.json({ uploaded: safeName });
   } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: err.message });
     console.error('Upload error:', err);
     res.status(500).json({ error: err.message });
   }
@@ -143,7 +209,15 @@ app.post('/api/raw/upload', upload.single('file'), async (req, res) => {
 
 // --- Start server  NFR-SEC-003 (localhost only) ---
 // TASK-004
-app.listen(PORT, '127.0.0.1', () => {
+app.listen(PORT, '127.0.0.1', async () => {
   console.log(`Knowledge Compiler running at http://127.0.0.1:${PORT}`);
-  console.log(`Serving wiki from: ${WIKI_DIR}`);
+  const registry = await loadVaultRegistry();
+  if (registry.length > 0) {
+    const ids = registry.map(v => v.id).join(', ');
+    console.log(`Registered vaults: ${ids}`);
+    console.log(`Default wiki: ${registry[0].path}/wiki`);
+  } else {
+    console.log('No vault registry found; using legacy wiki directory.');
+    console.log(`Serving wiki from: ${LEGACY_WIKI_DIR}`);
+  }
 });
