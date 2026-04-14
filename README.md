@@ -48,7 +48,7 @@ There are seven operations. Type them in the chat with your LLM (Claude Code, Cl
 
 The LLM will:
 
-1. Read the source in full (fetching it first if it is a URL — see below)
+1. Read the source in full (fetching it first if it is a URL or PDF — see below)
 2. Create `wiki/summaries/<source-slug>.md`
 3. Identify every concept, entity, and strategy mentioned
 4. Create a new page for each concept/entity that doesn't have one yet; update existing pages with new information
@@ -56,6 +56,7 @@ The LLM will:
 6. Update `wiki/index.md` with new and changed entries
 7. Append a timestamped entry to `wiki/log.md`
 8. Flag any contradictions with existing wiki content
+9. Create a journal entry in `wiki/journal/` recording how the session unfolded — what was certain, what required judgment calls, and what follow-up questions remain
 
 **Local file examples:**
 
@@ -97,7 +98,7 @@ When given a PDF, the LLM automatically invokes the `ingest-pdf` skill, which ru
 
 Stage selection is automatic — no flags needed. The script exits with an error and an explanation if all stages fail (e.g., encrypted PDF) or if a required dependency is missing.
 
-After ingestion you will see new or updated files in `wiki/summaries/`, `wiki/concepts/`, `wiki/entities/`, and possibly `wiki/synthesis/`. Click **Refresh** in the graph viewer to see the changes.
+After ingestion you will see new or updated files in `wiki/summaries/`, `wiki/concepts/`, `wiki/entities/`, `wiki/journal/`, and possibly `wiki/synthesis/`. Click **Refresh** in the graph viewer to see the changes.
 
 ---
 
