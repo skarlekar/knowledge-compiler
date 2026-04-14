@@ -45,6 +45,7 @@ topic. Read those pages.**
   indication of threats, tools, or adoption challenges.
 
 **If coverage is insufficient:**
+
 - Invoke the research skill: `Skill({ skill: "research", args: "<topic>" })`
 - After the skill completes, **re-run the full coverage check above** — re-read
   `wiki/index.md` and all new pages, then verify all three criteria again.
@@ -92,6 +93,7 @@ Compile the URL map before writing. Apply it during Step 4.
 ### 3 — Plan the newsletter structure
 
 Before writing, plan:
+
 - Which opening hook archetype fits the topic (see Style Guide)
 - The primary metaphor and which sections it will carry through
 - 3–5 natural Friction Points
@@ -251,7 +253,75 @@ timeframe ("For twenty years...") to establish how foundational the disruption i
 > engineering has been: same inputs, same outputs. That contract is now fracturing
 > at every layer of the stack.*
 
+**Archetype 4 — Counterintuitive inversion**
+Open by flipping the reader's most confident assumption about the topic — the
+thing they believe is the solution is actually the problem, or the cause is the
+opposite of what they expect. Do not soften it. State the inversion flatly, then
+spend the hook building the case for why it's true.
+
+> *The most dangerous thing you can do with a capable AI agent is give it better
+> instructions. More detailed prompts, richer context, clearer goals — and the
+> blast radius grows. The failure modes don't shrink when you improve the
+> specification. They become more expensive.*
+
+Use when the reader's current investment is pointed in the wrong direction. Distinct
+from Philosophical Challenge (which names a broken assumption about the past) —
+this one targets a belief the reader holds *right now*, about their *current* work.
+
+**Archetype 5 — The false solved problem**
+Acknowledge something the industry has genuinely solved, then pivot immediately
+to the harder adjacent problem it exposed. Opens with earned respect for the
+reader's existing work, then reorients them toward what's next. Never criticize
+what they've built — build on it.
+
+> *The retrieval problem is solved. Vector databases are commoditized, embedding
+> models ship in an afternoon, RAG pipelines are table stakes. The problem nobody
+> is talking about is what happens to the knowledge after retrieval — where it
+> goes, whether it persists, whether it contradicts something the system already
+> knows, and whether any of it will still be true next quarter.*
+
+Use when the topic builds on a mature adjacent area. Avoids "your stack is wrong"
+fatigue by meeting the reader where they are — competent, having shipped things —
+and pointing them forward rather than backward.
+
+**Archetype 6 — Statistical reframe**
+Open with a single, specific number that recalibrates the reader's sense of scale.
+No story, no assertion — just a datum that reframes everything that follows. The
+number should reveal either that a problem they considered minor is enormous, or
+that a solution they considered expensive is surprisingly tractable.
+
+> *One hundred articles. Four hundred thousand words. Zero vector databases. Zero
+> embedding models. Zero retrieval pipelines. That is the full infrastructure
+> footprint of [Andrej Karpathy's](https://x.com/karpathy) personal knowledge
+> base at the scale where most teams are spending six figures on RAG architecture.
+> The cost differential is not a capability gap. It is a complexity assumption
+> that nobody has examined.*
+
+The number must come from the research log or a raw source — never manufactured.
+Use when a single verified datum does more rhetorical work than any narrative could.
+
+**Archetype 7 — Thought experiment**
+Place the reader inside a specific, concrete decision point they will actually
+face — six months, one year from now. No hypothetical "imagine a world."
+A precise scenario with a yes/no question at the end that forces honest
+self-assessment before the first section header.
+
+> *Six months from now, a new team member joins. On their second day, they ask a
+> question your team answered thoroughly eight months ago — a decision that cost
+> two weeks of research and three conflicting recommendations before you resolved
+> it. Does your knowledge system surface that answer, with its source and the
+> confidence it deserves? Or does it reconstruct it from scratch, probabilistically,
+> from the same documents your previous team read?*
+>
+> *Your answer determines whether you have a knowledge base or a very expensive
+> reset button.*
+
+Use when the topic is about operational readiness or forward-looking risk. Distinct
+from Narrative Vignette (which reconstructs a past failure) — this one implicates
+the reader's *current* decisions, not a past mistake.
+
 **Hook rules:**
+
 - Never open with "In this newsletter..." or any meta-framing
 - Never introduce the concept name in the first paragraph — build stakes first
 - End the hook with a one-sentence thesis that states exactly what the newsletter argues
@@ -291,13 +361,15 @@ The most distinctive structural element. Placed after establishing what the righ
 approach is — friction lands with context, not before it.
 
 **Format:**
-```
+
+```markdown
 > **Friction Point:** [What organizations have today] is [inadequate because]
 > [specific consequence]. [Why the gap is wider than it looks — the organizational,
 > cultural, or psychological barrier, not just the technical one.]
 ```
 
 **Rules:**
+
 - 100–150 words each
 - Focus on WHY adoption is hard — organizational resistance, tool gaps, incentive
   misalignment — not HOW to solve it
@@ -333,6 +405,7 @@ Citations are inline — they follow the claim, not precede it.
   with the primary
 
 **Examples from Signal Over Noise:**
+
 - *"The CPU without an OS"* — hardware that cannot function without its layer
 - *"Fault lines"* — geological inevitability; structural, not incidental
 - *"The detective's corkboard"* — evidence-linking as intelligence work
@@ -344,7 +417,7 @@ Citations are inline — they follow the claim, not precede it.
 
 Name each threat with a bold label. Pattern:
 
-```
+```markdown
 **[Threat Name]**
 What happens. Why it happens. What it costs if left unaddressed.
 (2–4 sentences per threat)
@@ -361,16 +434,17 @@ than "security risks." Include at least one threat that will surprise the reader
 2. Organise by functional category (not vendor)
 3. For each category:
 
-```
+```markdown
 **[Category Name]**
 - **Open Source:** [Tool](URL) — [one-line purpose]. Use when [scenario].
 - **Commercial / COTS:** [Tool](URL) — [one-line purpose]. Use when [scenario].
 ```
 
-4. Close with a convergence signal: what the existence of this tool market tells
+1. Close with a convergence signal: what the existence of this tool market tells
    us about where the industry is heading
 
 **Rules:**
+
 - No pricing
 - Frame by architectural fit, not vendor features
 - **Minimum 3 functional categories**
@@ -404,6 +478,7 @@ If any answer is "we haven't thought about this," you've found your gap.
 **Header:** `## The Signal` or `## Signal`
 
 Structure (no bullets — narrative prose only):
+
 1. Restate the core thesis in 2–3 sentences
 2. Pivot from threat to opportunity: "The organizations that [X] will [Y]"
 3. Name the competitive moat that winners will build
@@ -411,21 +486,56 @@ Structure (no bullets — narrative prose only):
    information
 
 **Examples of closing sentences:**
+
 - *"The detective's corkboard was always a graph. Now, so is your AI's memory."*
 - *"Build the foundation first. The intelligence will follow."*
 - *"The model is the CPU. The harness is the operating system. Ship the OS."*
 
 ---
 
+### Diagrams and Images
+
+Newsletters support two visual options. Use them to clarify architecture,
+relationships, or comparisons that prose alone handles poorly.
+
+**Static SVG files** — for custom illustrations or any visual Mermaid cannot produce
+
+- Save the SVG to `wiki/images/<slug>.svg` (kebab-case, descriptive name)
+- Reference from the newsletter file with a relative path:
+  `![Description](../images/diagram-slug.svg)`
+- The Express frontend resolves this to `/api/wiki/image?path=images/diagram-slug.svg`
+- Use for: architecture diagrams, branded visuals, complex custom illustrations
+
+**Mermaid diagrams** — for process flows, relationships, and structured data
+
+- Write inline as a fenced mermaid block directly in the newsletter markdown
+- Use for: ingest/query/lint workflow flows, concept relationship maps,
+  comparison diagrams, before/after architecture contrasts
+- Supported types: flowchart, sequence, ER, state, Gantt, pie, mindmap
+
+**Rules:**
+
+- Diagrams are optional — only include one if it genuinely replaces 200+ words
+  of prose explanation
+- Maximum 2 diagrams per newsletter; more creates visual noise
+- Every diagram needs a caption (the `![caption]` alt text or a line of prose
+  immediately following)
+- Never manufacture SVG files — only reference files that actually exist in
+  `wiki/images/`
+
+---
+
 ### Masthead and Footer
 
 **Masthead** (first line of body, before hook):
-```
+
+```markdown
 *Signal Over Noise | [Topic] | [YYYY-MM-DD]*
 ```
 
 **Footer** (last line of file):
-```
+
+```markdown
 ---
 *Tags: #[tag1] #[tag2] #[tag3] #[tag4] #[tag5]*
 ```

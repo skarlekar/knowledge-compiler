@@ -40,7 +40,7 @@ npm start
 
 ## Using the Knowledge Compiler
 
-There are six operations. Type them in the chat with your LLM (Claude Code, Claude.ai, or any LLM that can read your repo).
+There are seven operations. Type them in the chat with your LLM (Claude Code, Claude.ai, or any LLM that can read your repo).
 
 ### 1. Ingest
 
@@ -197,8 +197,10 @@ The LLM will:
 2. If coverage is insufficient: run the research workflow (web search → wiki pages) before proceeding
 3. Read original source files for direct quotes and specific citations
 4. Write a 4,000–5,500 word newsletter with: narrative hook, problem/context with comparison table, deep analysis sections, threats, toolscape (open-source and commercial tools), action item audit, and closing signal
-5. Save to `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`
-6. Update `wiki/index.md` and `wiki/log.md`
+5. Include Mermaid diagrams where content meets the diagram trigger conditions (4+ sequential steps, 3+ component relationships, or before/after architecture contrast)
+6. Save to `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`
+7. Back-link all source wiki pages with "Featured In" sections
+8. Update `wiki/index.md` and `wiki/log.md`
 
 **Examples:**
 
@@ -218,7 +220,37 @@ The newsletter follows the Signal Over Noise voice: energetic, active, direct ad
 
 ---
 
-### 6. Reset
+### 6. Journal
+
+**Trigger:** `journal` or `journal <description>`
+
+Captures the current session as a structured journal entry. Journal entries record the *session's reasoning* — not the domain content (that lives in wiki pages) but how the session unfolded: what was investigated, decisions made, what was uncertain, and what questions remain. Each entry links to any wiki pages created or consulted during the session.
+
+The LLM will:
+
+1. Identify the session type (`ingest`, `research`, `newsletter`, `query`, `lint`, or `mixed`)
+2. Record every wiki page consulted and every page created or updated
+3. Capture key judgment calls: what alternatives were considered, where the schema's rules required interpretation, what could improve
+4. Save to `wiki/journal/journal-<session-slug>-<YYYY-MM-DD>.md`
+5. Update `wiki/index.md` and `wiki/log.md`
+
+The journal skill is also automatically invoked at the end of `ingest`, `research`, `lint`, and `newsletter` operations — you rarely need to call it manually.
+
+**The distinction from synthesis pages:** Synthesis pages capture cross-cutting insight about the *domain*. Journal entries capture notes about the *session process* — reasoning, gaps, and follow-up questions that don't belong in a wiki page.
+
+**Examples:**
+
+```text
+journal
+```
+
+```text
+journal "research on graph databases"
+```
+
+---
+
+### 7. Reset
 
 **Trigger:** `./reset-wiki.sh`
 
@@ -361,6 +393,59 @@ When to prefer which approach
 Links to all pages involved
 ```
 
+### Journal pages (`wiki/journal/`)
+
+Session process notes — reasoning, judgment calls, and follow-up questions. Distinct from synthesis pages, which record domain insight. Created automatically at the end of ingest, research, lint, and newsletter sessions.
+
+```markdown
+---
+title: "Journal Entry — Session Description"
+type: journal
+tags: [journal, tag1, tag2]
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+session_type: ingest | research | newsletter | query | lint | mixed
+wiki_pages_consulted: ["concepts/page.md"]
+outcome: "One-line summary of what was produced or learned"
+---
+
+## Setup
+What was being investigated; the starting question or goal
+
+## Process
+Steps taken, decisions made, wiki pages consulted — focus on reasoning
+
+## Result
+What was produced; links to new or updated pages; what was learned
+
+## What Went Well
+What worked as expected or better; reinforces which schema rules to keep
+
+## What Could Improve
+Gaps, follow-up questions, schema amendment candidates
+```
+
+---
+
+## Diagrams in Wiki Pages
+
+The LLM can embed diagrams in wiki pages and newsletters using two methods:
+
+**Mermaid (inline)** — flowcharts, sequence diagrams, ER diagrams, and more. Written as a fenced code block; rendered automatically in the graph viewer:
+
+````markdown
+```mermaid
+flowchart TD
+    A[Raw Sources] --> B[Ingest]
+    B --> C[Wiki Pages]
+    C --> D[Graph Viewer]
+```
+````
+
+**Static SVG** — saved to `wiki/images/<slug>.svg` and referenced with a relative Markdown image link. The Express server serves images via `/api/wiki/image?path=<wiki-root-relative-path>`.
+
+Diagrams are created only when a trigger condition is met: 4+ sequential steps where order matters, 3+ component relationships where the connections are the key point, or a before/after architecture contrast on a synthesis page. The default stance is prose — diagrams are not added for decoration.
+
 ---
 
 ## Confidence Levels
@@ -397,6 +482,7 @@ The LLM follows these rules when writing pages — useful to know when reading t
 | ------- | ----------- |
 | **Force-directed graph** | Nodes coloured by page type (concept, entity, summary, synthesis, journal, …) with a live legend |
 | **Content panel** | Renders Markdown with a metadata bar showing `type`, `tags`, `confidence`, and `updated` |
+| **Mermaid diagrams** | Fenced ` ```mermaid ` blocks in wiki pages render as inline SVG automatically |
 | **Bidirectional navigation** | Click nodes in the graph or links in the content panel — both stay in sync |
 | **Breadcrumb trail** | Last 10 visited nodes, each clickable |
 | **Search** | Instant dropdown search across node names and file paths |
@@ -428,8 +514,10 @@ The LLM follows these rules when writing pages — useful to know when reading t
 ├── raw/                           # Your source documents (immutable, not in git)
 ├── .claude/
 │   └── commands/
-│       ├── ingest-url.md          # Project skill — fetch URL and save to raw/
-│       └── research.md            # Project skill — web research, source evaluation, claim extraction
+│       ├── ingest-url.md          # Skill — fetch URL and save to raw/
+│       ├── journal.md             # Skill — capture session as structured journal entry
+│       ├── newsletter.md          # Skill — write long-form newsletter from wiki content
+│       └── research.md            # Skill — web research, source evaluation, claim extraction
 ├── docs/
 │   ├── specification.md           # Full software requirements (EARS format)
 │   └── tasks.md                   # Implementation task list
@@ -439,7 +527,7 @@ The LLM follows these rules when writing pages — useful to know when reading t
 │   │   ├── fetch_md.py            # HTML-to-Markdown converter for URL ingest
 │   │   └── requirements.txt       # Python deps: markdownify, beautifulsoup4
 │   ├── server/
-│   │   └── index.js               # Express server — file API + upload endpoint
+│   │   └── index.js               # Express server — file API + image serving + upload endpoint
 │   └── public/
 │       ├── index.html
 │       ├── css/styles.css
@@ -447,13 +535,14 @@ The LLM follows these rules when writing pages — useful to know when reading t
 │       │   ├── app.js             # Entry point — wires modules together
 │       │   ├── graph.js           # Graph model builder (file discovery, link extraction)
 │       │   ├── visualization.js   # D3 force-directed graph rendering
-│       │   ├── content.js         # Markdown renderer + metadata bar
+│       │   ├── content.js         # Markdown renderer + Mermaid support + metadata bar
 │       │   ├── navigation.js      # Breadcrumb, Back, Home
 │       │   ├── search.js          # Search input + type filter toggles
 │       │   └── utils.js           # Shared helpers
 │       └── lib/                   # Vendored dependencies (no CDN at runtime)
 │           ├── d3.v7.min.js
 │           ├── marked.min.js
+│           ├── mermaid.min.js
 │           ├── js-yaml.min.js
 │           └── dompurify.min.js
 └── wiki/
@@ -462,6 +551,7 @@ The LLM follows these rules when writing pages — useful to know when reading t
     ├── dashboard.md               # Dataview dashboard (Obsidian)
     ├── analytics.md               # Charts View analytics (Obsidian)
     ├── flashcards.md              # Spaced repetition cards
+    ├── images/                    # SVG and image files for wiki pages and newsletters
     ├── summaries/                 # One page per source document (not in git)
     ├── concepts/                  # Concept and framework pages (not in git)
     ├── entities/                  # People, tools, organizations, etc. (not in git)
@@ -482,6 +572,7 @@ The LLM follows these rules when writing pages — useful to know when reading t
 | ------ | -------- | ----------- |
 | `GET` | `/api/wiki/files` | Returns a JSON array of all `.md` paths under `wiki/` |
 | `GET` | `/api/wiki/file?path=<rel>` | Returns the raw content of a wiki file |
+| `GET` | `/api/wiki/image?path=<rel>` | Serves an image from `wiki/images/` (SVG, PNG, JPG, GIF, WebP) |
 | `POST` | `/api/raw/upload` | Accepts `multipart/form-data`; writes the file to `raw/` (rejects overwrites) |
 
 The server binds to `127.0.0.1` only and never modifies files in `wiki/`.
@@ -507,7 +598,8 @@ Page formats, linking conventions, workflows, and graph viewer behaviour are dom
 | Role | Library |
 | ---- | ------- |
 | Graph visualization | [D3.js](https://d3js.org/) v7 (d3-force) |
-| Markdown rendering | [marked](https://marked.js.org/) |
+| Markdown rendering | [marked](https://marked.js.org/) v15 |
+| Diagram rendering | [Mermaid](https://mermaid.js.org/) v10 |
 | HTML sanitization | [DOMPurify](https://github.com/cure53/DOMPurify) |
 | YAML / frontmatter | [js-yaml](https://github.com/nodeca/js-yaml) |
 | Server | [Express](https://expressjs.com/) + [multer](https://github.com/expressjs/multer) |

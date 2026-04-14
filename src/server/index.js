@@ -72,6 +72,39 @@ app.get('/api/wiki/file', async (req, res) => {
   }
 });
 
+// --- API: Serve image from wiki/images/ ---
+// Restricted to wiki/images/ subtree; supports SVG, PNG, JPG, GIF, WebP.
+app.get('/api/wiki/image', async (req, res) => {
+  const relPath = req.query.path;
+  if (!relPath) {
+    return res.status(400).json({ error: 'Missing "path" query parameter.' });
+  }
+
+  const IMAGES_DIR = path.resolve(WIKI_DIR, 'images');
+  const resolved = path.resolve(WIKI_DIR, relPath);
+
+  // Path-traversal prevention — must stay inside wiki/images/
+  if (!resolved.startsWith(IMAGES_DIR + '/')) {
+    return res.status(403).json({ error: 'Access denied.' });
+  }
+
+  try {
+    const data = await readFile(resolved);
+    const ext = path.extname(relPath).toLowerCase();
+    const MIME = {
+      '.svg':  'image/svg+xml',
+      '.png':  'image/png',
+      '.jpg':  'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif':  'image/gif',
+      '.webp': 'image/webp'
+    };
+    res.type(MIME[ext] || 'application/octet-stream').send(data);
+  } catch (err) {
+    res.status(404).json({ error: `Image not found: ${relPath}` });
+  }
+});
+
 // --- API: Upload file to raw/ directory ---
 // TASK-064  FR-UP-004, CON-03, NFR-SEC-001
 const upload = multer({ storage: multer.memoryStorage() });

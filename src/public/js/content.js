@@ -11,6 +11,52 @@
 const ContentRenderer = (() => {
   let graphNodes = null;     // Map<path, node>
   let onNavigate = null;     // callback(nodeId)
+  let _currentRenderNode = '';   // tracks active node for image path resolution
+
+  // ── Image path resolution ─────────────────────────────────────────────────
+  // Rewrites relative <img src> paths to /api/wiki/image?path=... during
+  // DOMPurify sanitization so the browser never fires requests to invalid paths.
+  if (typeof DOMPurify !== 'undefined') {
+    DOMPurify.addHook('afterSanitizeAttributes', function (node) {
+      if (node.tagName !== 'IMG') return;
+      const src = node.getAttribute('src');
+      if (!src) return;
+      // Leave absolute URLs and data URIs unchanged
+      if (src.startsWith('http://') || src.startsWith('https://') ||
+          src.startsWith('/') || src.startsWith('data:')) return;
+      // Resolve wiki-root-relative path, then rewrite to API URL
+      const wikiPath = resolveLink(_currentRenderNode, src);
+      node.setAttribute('src', '/api/wiki/image?path=' + encodeURIComponent(wikiPath));
+    });
+  }
+
+  // ── Mermaid diagram support ───────────────────────────────────────────────
+  // Registers a marked extension that converts ```mermaid blocks into
+  // <div class="mermaid"> containers. mermaid.run() renders them into inline
+  // SVG after content is injected into the DOM.
+  if (typeof marked !== 'undefined' && typeof mermaid !== 'undefined') {
+    marked.use({
+      extensions: [{
+        name: 'mermaid',
+        level: 'block',
+        start(src) { return src.indexOf('```mermaid'); },
+        tokenizer(src) {
+          const match = src.match(/^```mermaid\r?\n([\s\S]*?)```/);
+          if (match) {
+            return { type: 'mermaid', raw: match[0], text: match[1].trim() };
+          }
+        },
+        renderer(token) {
+          // Encode < > & so diagram syntax survives DOMPurify as text content;
+          // the browser decodes entities back when mermaid reads textContent.
+          const safe = token.text
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          return `<div class="mermaid">${safe}</div>\n`;
+        }
+      }]
+    });
+    mermaid.initialize({ startOnLoad: false, theme: 'default' });
+  }
 
   /**
    * Initialize with graph data and navigation callback.
@@ -41,6 +87,7 @@ const ContentRenderer = (() => {
 
     // Render markdown body (frontmatter already stripped by graph.js parser)
     // TASK-033  FR-CR-003 — FR-CR-002
+    _currentRenderNode = nodeId;   // must be set before DOMPurify hook fires
     let html = marked.parse(node.body || '', { gfm: true, breaks: false });
 
     // TASK-038  NFR-SEC-002 — sanitize
@@ -64,6 +111,22 @@ const ContentRenderer = (() => {
 
     // Post-process links — TASK-034  FR-CR-004, TASK-035  FR-CR-005
     processLinks(contentBody, nodeId);
+
+    // Render Mermaid diagrams into inline SVG.
+    // The marked extension converts ```mermaid blocks to <div class="mermaid">
+    // before DOMPurify runs. As a fallback, also convert any fenced blocks that
+    // marked rendered as <pre><code class="language-mermaid"> (happens when the
+    // extension tokenizer doesn't match or is not registered in time).
+    if (typeof mermaid !== 'undefined') {
+      contentBody.querySelectorAll('pre > code.language-mermaid').forEach(code => {
+        const div = document.createElement('div');
+        div.className = 'mermaid';
+        div.textContent = code.textContent; // textContent decodes HTML entities
+        code.closest('pre').replaceWith(div);
+      });
+      const diagrams = contentBody.querySelectorAll('.mermaid');
+      if (diagrams.length > 0) mermaid.run({ nodes: diagrams });
+    }
   }
 
   /**

@@ -18,12 +18,67 @@ This is an LLM-maintained knowledge base on Signal Over Noise. The LLM writes an
 - `wiki/newsletters/` — Long-form newsletter issues generated from wiki content.
 - `wiki/journal/` — Research or session journal entries.
 - `wiki/presentations/` — Marp slide decks generated from wiki content.
+- `wiki/images/` — SVG and image files referenced by wiki pages and newsletters. Served by the Express app at `/api/wiki/image?path=<wiki-root-relative-path>`.
 
 ## File Naming
 
 - All lowercase, hyphens for word separation: `concept-name.md`
 - No spaces, no special characters, no uppercase
 - Name should match the page title slug
+
+## Image and Diagram Conventions
+
+Two options for visuals in wiki pages and newsletters:
+
+**Option A — Static SVG files** (custom illustrations, architecture diagrams, any rich SVG)
+
+- Save to `wiki/images/<slug>.svg` using kebab-case: `harness-architecture.svg`
+- Reference with a path relative to the current file:
+  - From `wiki/newsletters/`: `![Description](../images/diagram-slug.svg)`
+  - From `wiki/concepts/`: `![Description](../images/diagram-slug.svg)`
+  - From `wiki/summaries/`: `![Description](../images/diagram-slug.svg)`
+- The Express app resolves these to `/api/wiki/image?path=images/diagram-slug.svg`
+
+**Option B — Mermaid diagrams** (flowcharts, sequence diagrams, ER diagrams, authored as text)
+
+Write inline in the markdown file using a fenced mermaid block:
+
+````text
+```mermaid
+graph TD
+    A[Raw Sources] --> B[Ingest]
+    B --> C[Wiki Pages]
+```
+````
+
+- Rendered into inline SVG by the frontend automatically — no image file needed
+- Supported diagram types: flowchart, sequence, class, state, ER, Gantt, pie, mindmap
+
+**When to use which:**
+
+- Use Mermaid for process flows, relationships, and anything that can be expressed as diagram syntax — it stays as readable text in the markdown file
+- Use static SVG for custom illustrations, branded diagrams, or anything Mermaid cannot express
+
+**When to create a diagram at all (wiki pages):**
+
+Create a diagram only when **one or more** trigger conditions are met:
+
+- A process has 4+ sequential steps where order or branching matters and prose would force the reader to mentally reconstruct the sequence
+- A relationship exists between 3+ named entities or components where the connections themselves are the point, not just a list of things
+- A before/after architecture contrast appears in a synthesis page where the structural difference is the core argument
+
+**Do not create a diagram for:**
+
+- Simple lists or enumerations — a bullet list is clearer
+- Relationships between only two things — one sentence of prose is clearer
+- Decoration, visual variety, or to fill space on a page
+- Summary pages (`wiki/summaries/`) — these are source references, not explanations
+
+**Default stance: no diagram unless a trigger condition is met.** When in doubt, write prose.
+
+**Limits:** Maximum 1 diagram per wiki page. Synthesis pages: maximum 2.
+
+**Newsletters:** The newsletter skill governs its own diagram rules (200+ words replaced; maximum 2 per issue). Do not apply wiki-page limits to newsletters.
 
 ## Page Format
 
@@ -32,7 +87,7 @@ Every wiki page uses this frontmatter and structure:
 ```yaml
 ---
 title: "Page Title"
-type: concept | entity | summary | synthesis | newsletter
+type: concept | entity | summary | synthesis | newsletter | journal
 tags: [tag1, tag2, tag3]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -81,6 +136,17 @@ confidence: high | medium | low
 - Sections: Opening hook, Problem/Context (with comparison table), 2–3 deep analysis sections, Threats, Toolscape, Action Item, Closing Signal
 - Footer: `*Tags: #tag1 #tag2 ...*`
 - Additional frontmatter fields: `word_count: ~NNNN` and `wiki_pages_used: [...]`
+
+**Journal pages** (`wiki/journal/`):
+
+- Named `journal-<session-slug>-<YYYY-MM-DD>.md`; if a same-day same-slug file exists, append a version suffix: `-v2.md`, `-v3.md`, etc.
+- Capture session reasoning, not domain content — wiki pages hold the knowledge; journal entries hold the process notes
+- Additional frontmatter fields: `session_type: query | research | ingest | newsletter | lint | mixed`, `wiki_pages_consulted: [...]`, and `outcome: "<one-line summary>"`
+- `## Setup` — What was being investigated; the starting question or goal; what prompted this session
+- `## Process` — Steps taken and decisions made, with links to every wiki page consulted; focus on reasoning and judgment calls, not just actions
+- `## Result` — What was produced; links to any new or updated wiki pages; what was learned
+- `## What Went Well` — What worked as expected or better; reinforces which schema rules to keep
+- `## What Could Improve` — Gaps, follow-up questions, schema amendment candidates; at least one entry required
 
 ## Linking Conventions
 
@@ -187,6 +253,7 @@ When the user says "ingest [source]" or adds a file to `raw/`:
 6. Update `wiki/index.md` — add new entries, update summaries of changed pages
 7. Append to `wiki/log.md` with timestamp, source name, pages created/updated
 8. Flag any contradictions with existing wiki content
+9. Invoke the `journal` skill: `Skill({ skill: "journal", args: "ingest: <source-slug>" })`
 
 ### Query
 
@@ -209,6 +276,7 @@ When the user says "lint" or "health check":
 4. Report issues that need human judgment
 5. Suggest new sources or topics to investigate
 6. Update log
+7. Invoke the `journal` skill: `Skill({ skill: "journal", args: "lint" })`
 
 ### Research
 
@@ -233,6 +301,7 @@ The skill handles web search, source evaluation, content fetching, claim extract
 6. Add cross-links in both directions between all touched pages
 7. Update `wiki/index.md`
 8. Append to `wiki/log.md` with timestamp, topic, sources consulted count, and pages created/updated
+9. Invoke the `journal` skill: `Skill({ skill: "journal", args: "research: <topic>" })`
 
 ### Newsletter
 
@@ -241,7 +310,18 @@ When the user says "newsletter [topic]":
 Invoke the `newsletter` skill with the topic as the argument:
 `Skill({ skill: "newsletter", args: "<topic>" })`
 
-The skill assesses wiki coverage, auto-invokes the `research` skill if coverage is insufficient, then writes a long-form newsletter to `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`. Once the skill completes, update `wiki/index.md` (add newsletter entry under the Newsletters section) and append to `wiki/log.md`.
+The skill assesses wiki coverage, auto-invokes the `research` skill if coverage is insufficient, then writes a long-form newsletter to `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`. Once the skill completes, update `wiki/index.md` (add newsletter entry under the Newsletters section) and append to `wiki/log.md`. Then invoke the `journal` skill: `Skill({ skill: "journal", args: "newsletter: <topic>" })`
+
+### Journal
+
+When the user says "journal" or "journal [description]":
+
+Invoke the `journal` skill with the optional description as the argument:
+`Skill({ skill: "journal", args: "<description>" })`
+
+The skill captures the current session into a structured journal entry at `wiki/journal/journal-<session-slug>-<YYYY-MM-DD>.md`. Journal entries record session reasoning — what was investigated, decisions made, pages consulted, and follow-up questions — not domain content (which belongs in wiki pages). Once the skill completes, `wiki/index.md` and `wiki/log.md` are updated.
+
+**Boundary with Synthesis:** If a session produces a cross-cutting insight about the *domain*, create a synthesis page. If it produces notes about the *process* of reaching that insight, create a journal entry. Both can be created from the same session.
 
 ## Rules
 

@@ -290,6 +290,18 @@ html, body {
   font-size: 13px;
 }
 
+/* Mermaid diagram containers */
+.content-body .mermaid {
+  display: block;
+  margin: 1em 0;
+  text-align: center;
+  overflow-x: auto;
+}
+.content-body .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Internal wiki links in content */
 .content-body a.wiki-link {
   color: #4A90D9;
