@@ -241,6 +241,13 @@ When the user says "ingest [source]" or adds a file to `raw/`:
 - The skill downloads the page and its images to `raw/` and returns the saved filepath.
 - Use that filepath as [source] for steps 1–8 below.
 
+**If [source] is a PDF file (ends with `.pdf`):**
+
+- Invoke the `ingest-pdf` skill with the file path as the argument:
+  `Skill({ skill: "ingest-pdf", args: "<path-to-pdf>" })`
+- The skill runs a three-stage pipeline (pdfminer.six → Tesseract OCR → Claude Vision) and returns the saved `.md` filepath in `raw/`.
+- Use that filepath as [source] for steps 1–8 below.
+
 **If [source] is a local file already in `raw/`:**
 
 - Proceed directly to step 1.

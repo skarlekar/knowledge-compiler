@@ -19,7 +19,7 @@ src/        Graph viewer — Node.js server + browser frontend
 
 ## Quick Start
 
-**Prerequisites:** Node.js v18 or later. Python 3.8+ and pip (required for URL ingestion only).
+**Prerequisites:** Node.js v18 or later. Python 3.8+ and pip (required for URL and PDF ingestion). For PDF Stage 2 OCR: `brew install tesseract` (macOS) or `apt-get install tesseract-ocr` (Linux). For PDF Stage 3 Claude Vision: set `ANTHROPIC_API_KEY` in your environment.
 
 ```bash
 # From the repo root
@@ -78,6 +78,24 @@ ingest https://signalovernoise.karlekar.cloud/issue-007.html
 ```
 
 When given a URL, the LLM automatically invokes the `ingest-url` skill, which runs `src/tools/fetch_md.py` to download the page and its images, save the result to `raw/`, and then proceeds with the standard ingest steps above. Images are saved to `raw/images/<slug>/` and embedded with relative paths. No API calls or external services are used — pure local Python.
+
+**PDF examples:**
+
+```text
+ingest raw/the-control-dial.pdf
+```
+
+```text
+I dropped raw/q4-report.pdf in — please ingest it
+```
+
+When given a PDF, the LLM automatically invokes the `ingest-pdf` skill, which runs `src/tools/parse_pdf.py` using a three-stage pipeline:
+
+1. **Stage 1 — pdfminer.six** — Text extraction for standard text-based PDFs. Fast, no OCR. Used when avg chars/page ≥ 100.
+2. **Stage 2 — Tesseract OCR** — Renders pages via pypdfium2, then OCRs with Tesseract. Handles scanned documents. Used when Stage 1 output is thin and Tesseract is installed.
+3. **Stage 3 — Claude Vision** — Sends page images to `claude-haiku-4-5-20251001` as a final fallback. Requires `ANTHROPIC_API_KEY`. Used when both local stages produce thin output.
+
+Stage selection is automatic — no flags needed. The script exits with an error and an explanation if all stages fail (e.g., encrypted PDF) or if a required dependency is missing.
 
 After ingestion you will see new or updated files in `wiki/summaries/`, `wiki/concepts/`, `wiki/entities/`, and possibly `wiki/synthesis/`. Click **Refresh** in the graph viewer to see the changes.
 
@@ -514,6 +532,7 @@ The LLM follows these rules when writing pages — useful to know when reading t
 ├── raw/                           # Your source documents (immutable, not in git)
 ├── .claude/
 │   └── commands/
+│       ├── ingest-pdf.md          # Skill — parse PDF to Markdown and save to raw/
 │       ├── ingest-url.md          # Skill — fetch URL and save to raw/
 │       ├── journal.md             # Skill — capture session as structured journal entry
 │       ├── newsletter.md          # Skill — write long-form newsletter from wiki content
@@ -525,7 +544,8 @@ The LLM follows these rules when writing pages — useful to know when reading t
 │   ├── package.json
 │   ├── tools/
 │   │   ├── fetch_md.py            # HTML-to-Markdown converter for URL ingest
-│   │   └── requirements.txt       # Python deps: markdownify, beautifulsoup4
+│   │   ├── parse_pdf.py           # Three-stage PDF parser (pdfminer → Tesseract → Claude Vision)
+│   │   └── requirements.txt       # Python deps: markdownify, beautifulsoup4, pdfminer.six, pypdfium2, pytesseract, Pillow, anthropic
 │   ├── server/
 │   │   └── index.js               # Express server — file API + image serving + upload endpoint
 │   └── public/
@@ -603,6 +623,10 @@ Page formats, linking conventions, workflows, and graph viewer behaviour are dom
 | HTML sanitization | [DOMPurify](https://github.com/cure53/DOMPurify) |
 | YAML / frontmatter | [js-yaml](https://github.com/nodeca/js-yaml) |
 | Server | [Express](https://expressjs.com/) + [multer](https://github.com/expressjs/multer) |
+| PDF text extraction | [pdfminer.six](https://pdfminer-docs.readthedocs.io/) (Stage 1) |
+| PDF page rendering | [pypdfium2](https://pypdfium2.readthedocs.io/) — Google PDFium, no poppler dep (Stages 2 & 3) |
+| OCR | [pytesseract](https://github.com/madmaze/pytesseract) + Tesseract engine (Stage 2) |
+| PDF Vision fallback | [Anthropic Python SDK](https://github.com/anthropics/anthropic-sdk-python) → `claude-haiku-4-5-20251001` (Stage 3) |
 
 All frontend dependencies are bundled locally — no CDN requests at runtime.
 

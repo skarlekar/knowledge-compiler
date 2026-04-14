@@ -1,2 +1,7 @@
 markdownify>=0.13.0
 beautifulsoup4>=4.12.0
+pdfminer.six>=20221105
+pypdfium2>=4.0.0
+pytesseract>=0.3.10
+Pillow>=10.0.0
+anthropic>=0.20.0
