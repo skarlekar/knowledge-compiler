@@ -200,7 +200,7 @@ updated: ${date}
   if (template === 'code-analysis') {
     return `---
 title: "Index — ${vaultName}"
-type: concept
+type: index
 tags: [index]
 created: ${date}
 updated: ${date}
@@ -264,7 +264,7 @@ updated: ${date}
   }
   return `---
 title: "Index — ${vaultName}"
-type: concept
+type: index
 tags: [index]
 created: ${date}
 updated: ${date}
@@ -317,7 +317,228 @@ updated: ${date}
 
 // Helper: build a minimal log.md for a new vault
 function buildVaultLog(vaultName, template, date) {
-  return `# ${vaultName} — Activity Log\n\n### ${date} — Vault Created\n\n- **Source/Trigger**: New vault created via UI\n- **Template**: ${template}\n- **Pages created**: wiki/index.md, wiki/log.md\n`;
+  return `---
+title: "Activity Log"
+type: log
+---
+
+# ${vaultName} — Activity Log
+
+Append-only record of all wiki changes.
+
+## Format
+
+Each entry follows this format:
+
+\`\`\`text
+### YYYY-MM-DD — [Action Type]
+- **Source/Trigger**: what initiated the action
+- **Pages created**: list of new pages
+- **Pages updated**: list of updated pages
+- **Notes**: any decisions made
+\`\`\`
+
+---
+
+### ${date} — Vault Created
+
+- **Source/Trigger**: New vault created via UI
+- **Template**: ${template}
+- **Pages created**: wiki/index.md, wiki/log.md
+`;
+}
+
+// Helper: build research meta-pages (dashboard, analytics, flashcards)
+function buildResearchDashboard(date) {
+  return `---
+title: "Dashboard"
+type: dashboard
+tags: [meta]
+updated: ${date}
+---
+
+# Dashboard
+
+Live queries powered by the [Dataview](https://github.com/blacksmithgu/obsidian-dataview) Obsidian plugin.
+
+## Low Confidence Pages
+
+Pages that need more sources or evidence to strengthen.
+
+\`\`\`dataview
+TABLE confidence, sources, updated
+FROM "wiki/concepts" OR "wiki/entities"
+WHERE confidence = "low"
+SORT updated DESC
+\`\`\`
+
+## All Concepts by Tag
+
+\`\`\`dataview
+TABLE tags, confidence, updated
+FROM "wiki/concepts"
+SORT file.name ASC
+\`\`\`
+
+## Recently Updated Pages
+
+The 15 most recently modified wiki pages.
+
+\`\`\`dataview
+TABLE type, tags, updated
+FROM "wiki/"
+SORT updated DESC
+LIMIT 15
+\`\`\`
+
+## Pages with Most Sources
+
+Pages informed by the greatest number of raw sources.
+
+\`\`\`dataview
+TABLE length(sources) AS "Source Count", confidence, updated
+FROM "wiki/concepts" OR "wiki/entities"
+WHERE sources
+SORT length(sources) DESC
+LIMIT 10
+\`\`\`
+
+## Orphan Check
+
+Pages that may lack inbound links (review manually).
+
+\`\`\`dataview
+TABLE type, tags, updated
+FROM "wiki/concepts" OR "wiki/entities"
+WHERE length(file.inlinks) = 0
+SORT updated ASC
+\`\`\`
+
+## Entity Overview
+
+\`\`\`dataview
+TABLE tags, updated
+FROM "wiki/entities"
+SORT file.name ASC
+\`\`\`
+`;
+}
+
+function buildResearchAnalytics(date) {
+  return `---
+title: "Analytics"
+type: dashboard
+tags: [meta]
+updated: ${date}
+---
+
+# Analytics
+
+Visual analytics powered by the [Charts View](https://github.com/caronchen/obsidian-chartsview-plugin) Obsidian plugin.
+
+## Page Distribution by Type
+
+\`\`\`chartsview
+type: pie
+options:
+  legend:
+    display: true
+    position: right
+data:
+  - label: Concepts
+    value: 0
+  - label: Entities
+    value: 0
+  - label: Summaries
+    value: 0
+  - label: Syntheses
+    value: 0
+\`\`\`
+
+## Confidence Distribution
+
+\`\`\`chartsview
+type: bar
+options:
+  legend:
+    display: false
+  indexAxis: y
+data:
+  - label: High
+    value: 0
+    backgroundColor: "#4caf50"
+  - label: Medium
+    value: 0
+    backgroundColor: "#ff9800"
+  - label: Low
+    value: 0
+    backgroundColor: "#f44336"
+\`\`\`
+
+## Top Tags
+
+\`\`\`chartsview
+type: wordcloud
+options:
+  maxRotation: 0
+  minRotation: 0
+data:
+  - tag: placeholder-tag-1
+    value: 1
+  - tag: placeholder-tag-2
+    value: 1
+  - tag: placeholder-tag-3
+    value: 1
+\`\`\`
+`;
+}
+
+function buildResearchFlashcards(date) {
+  return `---
+title: "Flashcards"
+type: flashcards
+tags: [meta, flashcards]
+updated: ${date}
+---
+
+# Flashcards
+
+Spaced repetition cards for the [Spaced Repetition](https://github.com/st3v3nmw/obsidian-spaced-repetition) Obsidian plugin.
+
+## Format
+
+Each flashcard uses this format:
+
+\`\`\`text
+Question text goes here
+?
+Answer text goes here
+\`\`\`
+
+Separate cards with blank lines. The \\\`?\\\` on its own line separates question from answer.
+
+Ask the LLM to generate flashcards from any wiki page:
+
+\`\`\`text
+Generate flashcards from [[concepts/concept-name]]
+\`\`\`
+
+---
+
+## Cards
+
+What is the purpose of the "ingest" workflow?
+?
+The ingest workflow reads a raw source document, creates a summary page, identifies and creates/updates concept and entity pages, adds cross-links between all touched pages, and updates the index and log.
+
+What are the three confidence levels and when is each used?
+?
+**High** — well-established idea with multiple corroborating sources and concrete examples. **Medium** — supported by sources but limited examples or single-source. **Low** — single mention, anecdotal, or speculative.
+
+What does the "lint" operation check for?
+?
+Orphan pages (no inbound links), stale claims, contradictions between pages, missing cross-links, incomplete sections, and low-confidence pages that could be strengthened.
+`;
 }
 
 // --- API: Create a new vault ---
@@ -439,10 +660,17 @@ app.post('/api/vaults', async (req, res) => {
       if (err.code !== 'ENOENT') console.warn(`[VAULTS] Could not copy reset script: ${err.message}`);
     }
 
-    // Write wiki/index.md and wiki/log.md
+    // Write wiki/index.md, wiki/log.md, and template-specific meta-pages
     const today = new Date().toISOString().slice(0, 10);
     await writeFile(path.join(resolvedVaultPath, 'wiki', 'index.md'), buildVaultIndex(name.trim(), template.trim(), today));
     await writeFile(path.join(resolvedVaultPath, 'wiki', 'log.md'), buildVaultLog(name.trim(), template.trim(), today));
+
+    // Research vaults get additional meta-pages: dashboard, analytics, flashcards
+    if (template.trim() === 'research') {
+      await writeFile(path.join(resolvedVaultPath, 'wiki', 'dashboard.md'), buildResearchDashboard(today));
+      await writeFile(path.join(resolvedVaultPath, 'wiki', 'analytics.md'), buildResearchAnalytics(today));
+      await writeFile(path.join(resolvedVaultPath, 'wiki', 'flashcards.md'), buildResearchFlashcards(today));
+    }
 
     // Update vaults.json
     const newEntry = {
