@@ -269,9 +269,13 @@ When the user asks a question:
 1. Read `wiki/index.md` to find relevant pages
 2. Read those pages
 3. Synthesize an answer citing specific pages with wiki links
-4. If the answer reveals new insight worth preserving:
-   - Create a synthesis page in `wiki/synthesis/`
-   - Update index and log
+4. **Synthesis gate** after composing the answer, check whether it meets **any** of these triggers. If yes, create a synthesis page in `wiki/synthesis/` and update index and log:
+   - The answer **compares two or more wiki pages** (concepts, entities, or summaries) and produces a structured comparison, contrast, or trade-off analysis
+   - The answer produces a **recommendation or decision framework** (e.g., "when to use A vs. B")
+   - The answer draws a **cross-cutting insight** that does not belong on any single existing page
+   - The answer **resolves or maps a contradiction** between pages
+  
+   Do **not** create a synthesis page if the answer merely restates content from a single page.
 
 ### Lint
 
