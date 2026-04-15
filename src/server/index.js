@@ -51,8 +51,14 @@ async function resolveVaultRoot(vaultId) {
   throw Object.assign(new Error('No vaults registered. Create one via the UI.'), { status: 404 });
 }
 
-// --- Static files ---
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// --- Static files (no-cache in dev to avoid stale JS/CSS) ---
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  etag: false,
+  lastModified: false,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+}));
 app.use(express.json());
 
 // --- API: Vault registry (client receives id/name/template/purpose — path is stripped) ---
