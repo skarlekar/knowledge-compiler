@@ -106,6 +106,94 @@ app.get('/api/vault-templates', async (_req, res) => {
 
 // Helper: build a minimal index.md for a new vault
 function buildVaultIndex(vaultName, template, date) {
+  if (template === 'portfolio') {
+    return `---
+title: "Index — ${vaultName}"
+type: index
+tags: [index]
+created: ${date}
+updated: ${date}
+---
+
+# ${vaultName} — Index
+
+## Statistics
+
+| Type | Count |
+| --- | --- |
+| Holdings | 0 |
+| Watchlist | 0 |
+| Theses | 0 |
+| Decisions | 0 |
+| Sectors | 0 |
+| Asset Classes | 0 |
+| Performance Snapshots | 0 |
+| Assets | 0 |
+| Liabilities | 0 |
+| Research | 0 |
+| Journals | 0 |
+
+## Holdings
+
+| Page | Ticker | Type | Account | Updated |
+| --- | --- | --- | --- | --- |
+
+## Watchlist
+
+| Page | Ticker | Trigger Criteria | Added |
+| --- | --- | --- | --- |
+
+## Theses
+
+| Page | Ticker | Conviction | Last Validated |
+| --- | --- | --- | --- |
+
+## Decisions
+
+| Page | Ticker | Action | Date |
+| --- | --- | --- | --- |
+
+## Sectors
+
+| Page | Holdings | Updated |
+| --- | --- | --- |
+
+## Asset Classes
+
+| Page | Current Allocation | Updated |
+| --- | --- | --- |
+
+## Performance
+
+| Page | Date | Total Value | Unrealized G/L |
+| --- | --- | --- | --- |
+
+## Assets
+
+| Page | Type | Estimated Value | Updated |
+| --- | --- | --- | --- |
+
+## Liabilities
+
+| Page | Type | Outstanding Balance | Updated |
+| --- | --- | --- | --- |
+
+## Net Worth
+
+| Page | Date | Net Worth |
+| --- | --- | --- |
+
+## Research
+
+| Page | Topic | Created |
+| --- | --- | --- |
+
+## Journals
+
+| Page | Session Type | Created | Outcome |
+| --- | --- | --- | --- |
+`;
+  }
   if (template === 'code-analysis') {
     return `---
 title: "Index — ${vaultName}"
@@ -290,7 +378,16 @@ app.post('/api/vaults', async (req, res) => {
       'wiki/libraries', 'wiki/patterns', 'wiki/anti-patterns', 'wiki/modules',
       'wiki/journal', 'wiki/deep-dive', 'wiki/images'
     ];
-    const subdirs = template.trim() === 'code-analysis' ? CODE_SUBDIRS : RESEARCH_SUBDIRS;
+    const PORTFOLIO_SUBDIRS = [
+      'raw', 'wiki', 'wiki/holdings', 'wiki/watchlist', 'wiki/theses',
+      'wiki/decisions', 'wiki/sectors', 'wiki/asset-classes', 'wiki/performance',
+      'wiki/research', 'wiki/journal', 'wiki/net-worth', 'wiki/assets',
+      'wiki/liabilities', 'wiki/images'
+    ];
+    const t = template.trim();
+    const subdirs = t === 'code-analysis' ? CODE_SUBDIRS
+                  : t === 'portfolio'     ? PORTFOLIO_SUBDIRS
+                  : RESEARCH_SUBDIRS;
     for (const d of subdirs) {
       await mkdir(path.join(resolvedVaultPath, d), { recursive: true });
     }

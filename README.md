@@ -16,12 +16,13 @@ A vault is a self-contained knowledge base with its own:
 - `.claude/commands/` — the skills (operations) available in this vault
 - `reset-wiki.sh` — script to reset the vault to a pristine empty state
 
-**Two vault templates are available:**
+**Three vault templates are available:**
 
 | Template | Best For | Wiki Page Types |
 | -------- | -------- | --------------- |
 | `research` | Articles, papers, newsletters, domain knowledge | concept, entity, summary, synthesis, newsletter, journal |
 | `code-analysis` | Analyzing software codebases | class, function, api, library, pattern, anti-pattern, module, journal |
+| `portfolio` | Personal financial portfolio tracking | holding, watchlist, thesis, decision, sector, asset-class, performance-snapshot, asset, liability, net-worth-snapshot |
 
 Vaults are registered in `vaults.json` at the project root and selected via a dropdown in the UI. Each vault is fully independent — different schema, different skills, different wiki content.
 
@@ -48,7 +49,7 @@ node server/index.js
 
 1. Open `http://localhost:3000` in your browser
 2. Click the **+** button next to the vault selector
-3. Enter a name, choose a directory, select a template (`research` or `code-analysis`), and describe the purpose
+3. Enter a name, choose a directory, select a template (`research`, `code-analysis`, or `portfolio`), and describe the purpose
 4. The server creates the full directory structure, copies the appropriate CLAUDE.md and skills, and registers the vault
 5. Open the vault directory in Claude Code (or any LLM tool that reads CLAUDE.md) and start working
 
@@ -69,7 +70,7 @@ graph TD
 
     subgraph Server["Express Server — src/server/index.js"]
         API1["GET/POST /api/vaults\nvault registry — read & create"]
-        API2["GET /api/vault-templates\nlist available templates"]
+        API2["GET /api/vault-templates\nlist available templates (research · code-analysis · portfolio)"]
         API3["GET /api/fs/ls\ndirectory browser for path picker"]
         API4["GET /api/wiki/files · /api/wiki/file\ndiscover & read wiki pages"]
         API5["GET /api/wiki/image\nserve images from wiki/images/"]
@@ -130,9 +131,11 @@ Three-tier skills architecture:
 └── vault-templates/
     ├── research.md                    # CLAUDE.md template for research vaults
     ├── code-analysis.md               # CLAUDE.md template for code-analysis vaults
+    ├── portfolio.md                   # CLAUDE.md template for portfolio vaults
     ├── scripts/
     │   ├── reset-wiki-research.sh
-    │   └── reset-wiki-code-analysis.sh
+    │   ├── reset-wiki-code-analysis.sh
+    │   └── reset-wiki-portfolio.sh
     └── skills/
         ├── research/                  # 2. Research vault-specific skills
         │   ├── ingest-url.md
@@ -141,11 +144,29 @@ Three-tier skills architecture:
         │   ├── newsletter.md
         │   ├── help.md
         │   └── lint.md
-        └── code-analysis/             # 2. Code-analysis vault-specific skills
-            ├── analyze-code.md
-            ├── document-project.md
-            ├── help.md
-            └── lint.md
+        ├── code-analysis/             # 2. Code-analysis vault-specific skills
+        │   ├── analyze-code.md
+        │   ├── document-project.md
+        │   ├── help.md
+        │   └── lint.md
+        └── portfolio/                 # 2. Portfolio vault-specific skills
+            ├── add-holding.md
+            ├── add-asset.md
+            ├── add-liability.md
+            ├── refresh.md
+            ├── thesis-check.md
+            ├── portfolio-review.md
+            ├── rebalance.md
+            ├── tax-snapshot.md
+            ├── net-worth-update.md
+            ├── net-worth-trend.md
+            ├── decision-log.md
+            ├── watchlist-add.md
+            ├── research.md
+            ├── ingest-url.md
+            ├── ingest-pdf.md
+            ├── lint.md
+            └── help.md
                                        # 3. Vault-local copies live at
                                        #    <vault-root>/.claude/commands/
                                        #    (deployed on vault creation)
@@ -225,6 +246,54 @@ document-project
 
 ---
 
+### Portfolio Vault Operations
+
+#### `add-holding <ticker> <type> <account> [shares]`
+
+Adds a new investment position. Accepts ticker symbol, holding type (`stock`, `etf`, `bond`, `treasury`, `cd`), account type (`retirement-ira`, `retirement-roth`, `non-retirement`), and share count. Claude fetches all other data from the internet: current price, company overview, recent news, analyst ratings, and the most recent earnings summary from SEC EDGAR. Creates a holding page, a preliminary thesis page, and an initial buy decision record.
+
+#### `add-asset <description> <type> [value]`
+
+Adds a non-investment asset. For `real-estate`, fetches a Zillow or Redfin AVM. For `vehicle`, fetches a Kelley Blue Book trade-in value. For `cash` and `other`, uses the user-provided value. Always triggers `net-worth-update` after creation.
+
+#### `add-liability <description> <type> <balance>`
+
+Adds a debt record. Balance is always user-provided — never fetched from the internet. Supports `mortgage`, `auto-loan`, `student-loan`, `credit-card`, `heloc`, `personal-loan`. Always triggers `net-worth-update`.
+
+#### `refresh <ticker>` or `refresh all`
+
+Re-fetches current price, news, and analyst data for one holding or all holdings. Updates the holding page and marks data as fresh.
+
+#### `portfolio-review`
+
+Full allocation analysis: computes current weights vs. target weights, flags concentration risks (single holding > 10%, single sector > 30%), summarises thesis health across all positions, and produces a dated `wiki/performance/snapshot-<date>.md` page.
+
+#### `thesis-check <ticker>`
+
+Validates an investment thesis against current data. Fetches the latest earnings, news, and analyst ratings; evaluates each thesis assumption; checks whether any invalidation criteria have been met. Returns one of: **Healthy** / **Monitoring** / **At Risk** / **Broken**.
+
+#### `rebalance`
+
+Drift analysis and trade suggestion list. Computes how far each holding is from its target weight and suggests specific buy/trim trades. Respects tax account type — retirement accounts are rebalanced freely; non-retirement accounts prefer new cash before selling to avoid taxable events. Tax-loss harvesting candidates are flagged separately.
+
+#### `tax-snapshot`
+
+Unrealized gain/loss report for non-retirement holdings. Estimates short-term vs. long-term exposure and identifies tax-loss harvesting opportunities. Includes wash-sale cautions.
+
+#### `net-worth-update` and `net-worth-trend`
+
+`net-worth-update` recomputes total net worth from all holdings, assets, and liabilities; overwrites `wiki/net-worth/current.md` and appends a row to `wiki/net-worth/history.md`. `net-worth-trend` analyses the history table and reports growth rate, peak, trough, and trajectory.
+
+#### `decision-log <ticker> <action> [shares] [price]`
+
+Creates a permanent decision record (`buy`, `sell`, `trim`, `add`, `hold`, `add-to-watchlist`, `remove-from-watchlist`). Links to the holding's thesis page and updates the decision history on the holding page.
+
+#### `watchlist-add <ticker>`
+
+Adds a ticker to the watchlist. Claude fetches current price and basic info; the user specifies what trigger criteria would move it into a held position.
+
+---
+
 ### Universal Operations (all vault types)
 
 #### `lint`
@@ -233,6 +302,7 @@ Audits all wiki pages for health issues and auto-fixes what it can; reports the 
 
 - **Research vaults:** orphan pages, broken links, stale source citations, missing required sections, contradictions between pages
 - **Code-analysis vaults:** stale `source_files` references, broken `file:line` citations in Where Found / Calls / Called By, orphan pages, missing cross-links
+- **Portfolio vaults:** stale holding prices (>7 days), stale asset valuations (>90 days), holdings without thesis pages, unvalidated theses, broken decision links, missing required sections
 
 #### `journal [description]`
 
@@ -243,7 +313,7 @@ journal
 journal "analyzed auth module after refactor"
 ```
 
-Session types: `ingest` · `research` · `newsletter` · `query` · `lint` · `mixed` (research); `analyze` · `query` · `lint` · `mixed` (code-analysis).
+Session types: `ingest` · `research` · `newsletter` · `query` · `lint` · `mixed` (research); `analyze` · `query` · `lint` · `mixed` (code-analysis); `add-holding` · `refresh` · `review` · `rebalance` · `tax` · `net-worth` · `query` · `lint` · `mixed` (portfolio).
 
 #### `help`
 
@@ -267,7 +337,7 @@ Which classes depend on the database layer?
 
 | Feature | Description |
 | ------- | ----------- |
-| **Force-directed graph** | Nodes coloured by page type with a live legend; stable positions on load (no settling animation) |
+| **Force-directed graph** | Nodes coloured by page type with a live legend; stable positions on load (no settling animation); covers all three vault templates |
 | **Vault selector** | Dropdown to switch between registered vaults; `+` button to create a new vault |
 | **Content panel** | Renders Markdown with a metadata bar showing `type`, `tags`, `confidence`, and `updated` |
 | **Mermaid diagrams** | Fenced ` ```mermaid ``` ` blocks render as inline SVG automatically |
@@ -328,9 +398,11 @@ knowledge-compiler/
 │   └── vault-templates/
 │       ├── research.md                # CLAUDE.md template for research vaults
 │       ├── code-analysis.md           # CLAUDE.md template for code-analysis vaults
+│       ├── portfolio.md               # CLAUDE.md template for portfolio vaults
 │       ├── scripts/
-│       │   ├── reset-wiki-research.sh          # Reset script for research vaults
-│       │   └── reset-wiki-code-analysis.sh     # Reset script for code-analysis vaults
+│       │   ├── reset-wiki-research.sh
+│       │   ├── reset-wiki-code-analysis.sh
+│       │   └── reset-wiki-portfolio.sh
 │       └── skills/
 │           ├── research/              # Research vault-specific skills
 │           │   ├── ingest-url.md
@@ -339,15 +411,34 @@ knowledge-compiler/
 │           │   ├── newsletter.md
 │           │   ├── help.md
 │           │   └── lint.md
-│           └── code-analysis/         # Code-analysis vault-specific skills
-│               ├── analyze-code.md
-│               ├── document-project.md
-│               ├── help.md
-│               └── lint.md
+│           ├── code-analysis/         # Code-analysis vault-specific skills
+│           │   ├── analyze-code.md
+│           │   ├── document-project.md
+│           │   ├── help.md
+│           │   └── lint.md
+│           └── portfolio/             # Portfolio vault-specific skills
+│               ├── add-holding.md     # Internet-sourced: price, news, earnings
+│               ├── add-asset.md       # Zillow/Redfin/KBB valuation lookup
+│               ├── add-liability.md
+│               ├── refresh.md
+│               ├── thesis-check.md
+│               ├── portfolio-review.md
+│               ├── rebalance.md
+│               ├── tax-snapshot.md
+│               ├── net-worth-update.md
+│               ├── net-worth-trend.md
+│               ├── decision-log.md
+│               ├── watchlist-add.md
+│               ├── research.md
+│               ├── ingest-url.md
+│               ├── ingest-pdf.md
+│               ├── lint.md
+│               └── help.md
 │
 ├── docs/                              # Project documentation
 │   ├── specification.md               # Full software requirements (EARS format)
 │   ├── tasks.md                       # Implementation task list
+│   ├── technical-deep-dive.md         # Auto-generated technical deep dive (document-project)
 │   └── doc-gen-instructions.md        # Instructions for the document-project skill
 │
 └── src/
@@ -387,7 +478,7 @@ knowledge-compiler/
 ├── wiki/
 │   ├── index.md                       # Master catalog — default node in graph
 │   ├── log.md                         # Append-only activity log
-│   ├── [type-specific subdirs]/       # concepts/, classes/, apis/, etc.
+│   ├── [type-specific subdirs]/       # concepts/, classes/, holdings/, net-worth/, etc.
 │   ├── journal/
 │   └── deep-dive/                     # (code-analysis only) generated deep dive docs
 └── .claude/commands/                  # Vault-local copies of all applicable skills

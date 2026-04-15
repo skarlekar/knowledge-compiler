@@ -17,6 +17,7 @@ Read the active vault's `CLAUDE.md`.
 
 - If the Directory Layout lists `wiki/concepts/` and `wiki/entities/` → **research** vault
 - If it lists `wiki/classes/` and `wiki/functions/` → **code-analysis** vault
+- If it lists `wiki/holdings/` and `wiki/net-worth/` → **portfolio** vault
 
 ### 2 — Print the appropriate help guide
 
@@ -30,7 +31,7 @@ Print the guide exactly as written below for the detected vault type. Do not sum
 
 ---
 
-# Knowledge Compiler — Research Vault
+## Knowledge Compiler — Research Vault
 
 This vault ingests source material, builds a structured wiki, and produces newsletters and synthesis pages from accumulated knowledge.
 
@@ -152,7 +153,7 @@ Run `ingest` again on the same URL or file. Pages are updated, not duplicated.
 
 ---
 
-# Knowledge Compiler — Code Analysis Vault
+## Knowledge Compiler — Code Analysis Vault
 
 This vault reads source code files, builds a structured wiki of classes, functions, APIs, libraries, patterns, and anti-patterns, and answers questions about the codebase.
 
@@ -282,6 +283,243 @@ Which files have the most stale references after the last refactor?
 ---
 
 ## Code Analysis Vault Guide (end)
+
+---
+
+## Portfolio Vault Guide
+
+> Print this block when vault type is **portfolio**.
+
+---
+
+## Knowledge Compiler — Portfolio Vault
+
+This vault tracks your financial portfolio — investment holdings, assets, liabilities, and net worth — and provides intelligence through automated data refresh, thesis tracking, rebalance analysis, and tax snapshots.
+
+## Adding Positions and Accounts
+
+### `add-holding <ticker> <type> <account> [shares]`
+
+Add a new investment holding. Claude fetches current price, news, analyst ratings, and recent earnings from the internet. You provide: ticker, holding type, account type, and shares held.
+
+**Holding types:** `stock`, `etf`, `bond`, `treasury`, `cd`, `other`
+
+**Account types:** `retirement-ira`, `retirement-roth`, `non-retirement`
+
+```text
+add-holding AAPL stock non-retirement 10
+add-holding VTI etf retirement-roth 25
+add-holding US10Y treasury non-retirement 5000
+```
+
+Creates: holding page, preliminary thesis page, initial buy decision page.
+
+---
+
+### `add-asset <description> <type> [value]`
+
+Add a non-investment asset. For real estate, fetches Zillow/Redfin AVM. For vehicles, fetches KBB trade-in value. For cash and other, uses your provided value.
+
+**Asset types:** `real-estate`, `vehicle`, `cash`, `collectible`, `other`
+
+```text
+add-asset "Home at 123 Main St" real-estate
+add-asset "2022 Toyota Camry XSE" vehicle
+add-asset "Chase Savings Account" cash 45000
+```
+
+---
+
+### `add-liability <description> <type> <balance>`
+
+Add a debt. Balances are always user-provided — never fetched from the internet.
+
+**Liability types:** `mortgage`, `auto-loan`, `student-loan`, `credit-card`, `heloc`, `personal-loan`, `other`
+
+```text
+add-liability "Mortgage on 123 Main St" mortgage 320000
+add-liability "Toyota Camry Auto Loan" auto-loan 18000
+add-liability "Chase Sapphire Card" credit-card 2400
+```
+
+---
+
+### `watchlist-add <ticker> [type]`
+
+Add a ticker to the watchlist. Claude fetches current price and basic info. You specify what trigger criteria would move it to a held position.
+
+```text
+watchlist-add NVDA stock
+watchlist-add SCHD etf
+```
+
+---
+
+## Keeping Data Current
+
+### `refresh <ticker>` or `refresh all`
+
+Re-fetch current price, recent news, and analyst data for one or all holdings. Updates holding pages and resets staleness.
+
+```text
+refresh AAPL
+refresh all
+```
+
+---
+
+## Analysis and Review
+
+### `portfolio-review`
+
+Comprehensive allocation analysis: computes current weights vs. targets, identifies concentration risks, summarizes thesis health, and produces a dated performance snapshot page.
+
+```text
+portfolio-review
+```
+
+---
+
+### `thesis-check <ticker>`
+
+Validate an investment thesis against the latest earnings, news, and analyst data. Assesses each thesis assumption and invalidation criterion. Flags theses as Healthy / Monitoring / At Risk / Broken.
+
+```text
+thesis-check AAPL
+thesis-check VTI
+```
+
+---
+
+### `rebalance`
+
+Drift analysis and trade suggestion list. Identifies overweight and underweight holdings relative to target weights and suggests specific buy/trim actions with tax-efficiency guidance.
+
+```text
+rebalance
+```
+
+---
+
+### `tax-snapshot`
+
+Unrealized gain/loss report for non-retirement holdings. Estimates short-term vs. long-term exposure and identifies tax-loss harvesting opportunities.
+
+```text
+tax-snapshot
+```
+
+---
+
+## Net Worth
+
+### `net-worth-update`
+
+Recompute total net worth from all holdings, assets, and liabilities. Overwrites `wiki/net-worth/current.md` and appends a row to `wiki/net-worth/history.md`.
+
+```text
+net-worth-update
+```
+
+---
+
+### `net-worth-trend`
+
+Analyze the net worth trend from history. Reports growth rate, peak/trough, trajectory, and asset vs. liability drivers.
+
+```text
+net-worth-trend
+```
+
+---
+
+## Logging Decisions
+
+### `decision-log <ticker> <action> [shares] [price]`
+
+Record a permanent buy/sell/trim/hold decision. Links to the holding's thesis and updates the decision history.
+
+**Actions:** `buy`, `sell`, `trim`, `add`, `hold`, `add-to-watchlist`, `remove-from-watchlist`
+
+```text
+decision-log AAPL trim 3 185.20
+decision-log TSLA sell 5 195.00
+```
+
+---
+
+## Research and Ingestion
+
+### Macro and Sector Research
+
+Use `research <topic>` to search credible financial sources for a macro or sector topic. Saves a research log and populates a `wiki/research/` page.
+
+```text
+research "Federal Reserve interest rate outlook 2025"
+research "AAPL competitive landscape AI"
+```
+
+---
+
+### Source Ingestion
+
+Use `ingest <url>` or `ingest <path-to-pdf>` to preserve a financial article, analyst report, earnings release, or 10-K/10-Q PDF to `raw/`.
+
+```text
+ingest https://example.com/analyst-report
+ingest ~/Downloads/AAPL-10K-2024.pdf
+```
+
+---
+
+## Portfolio Maintenance
+
+### Wiki Health Check
+
+Use `lint` to scan all wiki pages for health issues: stale prices, broken links, missing theses, unvalidated theses, and incomplete sections.
+
+```text
+lint
+```
+
+---
+
+### Session Journal
+
+Use `journal [description]` to capture the current session as a structured journal entry in `wiki/journal/`.
+
+```text
+journal
+journal "added Q1 holdings and ran rebalance analysis"
+```
+
+---
+
+## Getting Started
+
+**First-time portfolio setup:**
+
+1. `add-holding` for each investment position
+2. `add-asset` for real estate, vehicles, and cash accounts
+3. `add-liability` for mortgages, loans, and credit card balances
+4. `portfolio-review` — establishes baseline weights
+5. `net-worth-update` — computes first net worth snapshot
+
+**Monthly review:**
+
+1. `refresh all` — keep prices current
+2. `portfolio-review` — check drift and thesis health
+3. `rebalance` — generate trade suggestions
+4. `net-worth-update` — capture monthly snapshot
+
+**After earnings:**
+
+1. `refresh <ticker>` — get latest data
+2. `thesis-check <ticker>` — validate thesis vs. results
+
+---
+
+## Portfolio Vault Guide (end)
 
 ### 3 — Offer next steps
 
