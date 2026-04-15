@@ -55,6 +55,178 @@ node server/index.js
 
 ---
 
+## Usage Instructions
+
+### Step 1 — Start the Application
+
+```bash
+./start.sh
+```
+
+Open `http://localhost:3000` in your browser. If no vaults exist yet, you will see a welcome screen with a **+** button in the toolbar.
+
+### Step 2 — Create a Vault
+
+1. Click the **+** button in the toolbar
+2. **Vault Name** — give it a descriptive name (e.g., "AI Research", "MyApp Code Analysis", "Personal Portfolio")
+3. **Filesystem Path** — choose a directory outside the project root where vault files will live (e.g., `/Users/you/Documents/MyVaults/ai-research`). Click **Browse** to navigate your filesystem, or type the path directly. The directory will be created if it does not exist.
+4. **Template** — select one of the three vault types:
+   - **Research** — for ingesting articles, papers, and web content into a structured knowledge base
+   - **Code Analysis** — for analyzing software codebases and documenting their architecture
+   - **Portfolio** — for tracking investment holdings, assets, liabilities, and net worth
+5. Click **Create Vault**
+
+The application creates the full directory structure, copies the appropriate schema (`CLAUDE.md`) and skills into the vault, and switches to it in the graph viewer. You will see the initial nodes: index, log, and (for research vaults) dashboard, analytics, and flashcards.
+
+### Step 3 — Open a Claude Session in the Vault
+
+The graph viewer is for browsing and navigating the wiki. All operations — ingesting sources, analyzing code, adding holdings, running lint, etc. — are performed through an LLM session pointed at the vault directory.
+
+Open a terminal, navigate to the vault directory, and start a Claude Code session:
+
+```bash
+cd /path/to/your/vault
+claude
+```
+
+Claude reads the vault's `CLAUDE.md` schema and gains access to all the skills in `.claude/commands/`. You are now ready to work.
+
+### Step 4 — Discover Available Operations with `help`
+
+Type `help` in the Claude session. Claude detects the vault type and prints a complete operation guide with usage examples and workflow tips. This is the definitive reference for everything the vault can do.
+
+```text
+help
+```
+
+Each vault type gets its own guide — research vaults see ingest/research/newsletter operations, code-analysis vaults see analyze/analyze-deps/document-project, and portfolio vaults see add-holding/portfolio-review/rebalance and more.
+
+### Working with a Research Vault
+
+Research vaults build knowledge from source material — web articles, PDFs, and topic searches.
+
+**Ingest a web article:**
+
+```text
+ingest https://example.com/interesting-article
+```
+
+Claude fetches the page, converts it to Markdown in `raw/`, then reads the content and creates or updates concept pages, entity pages, and a summary page in `wiki/`. All pages are cross-linked and the index and log are updated.
+
+**Ingest a PDF:**
+
+```text
+ingest ~/Downloads/research-paper.pdf
+```
+
+The PDF goes through a three-stage extraction pipeline (text extraction, OCR, Claude Vision) and is then ingested the same way.
+
+**Research a topic from scratch:**
+
+```text
+research "retrieval augmented generation"
+```
+
+Claude searches the web for 3-5 credible sources, evaluates each for credibility, extracts attributed claims, and populates wiki pages — no source document required.
+
+**Generate a newsletter:**
+
+```text
+newsletter "The Future of Knowledge Graphs"
+```
+
+Transforms the wiki's accumulated knowledge into a 4,000-5,500 word long-form newsletter. If wiki coverage is thin, `research` runs automatically first.
+
+**Ask questions:**
+
+```text
+What does the wiki say about transformer architectures?
+Which concepts are related to knowledge graphs?
+Summarise what we know about agentic AI.
+```
+
+Claude reads relevant wiki pages and synthesises an answer with citations. If the answer reveals cross-cutting insights, a synthesis page is created automatically.
+
+### Working with a Code Analysis Vault
+
+Code-analysis vaults read source code and build a structured wiki of classes, functions, APIs, libraries, patterns, and anti-patterns.
+
+**Analyze an entire codebase:**
+
+```text
+analyze src/
+```
+
+Claude recursively reads every source file under `src/`, creates wiki pages for each class, function, API endpoint, library, design pattern, and anti-pattern it finds, and cross-links everything. Each page records `file:line` references back to the source code so everything stays traceable.
+
+**Analyze a single file:**
+
+```text
+analyze src/server/index.js
+```
+
+Focused analysis of one file. Creates or updates only the pages relevant to that file. Use this after making changes to a specific module — existing wiki pages are updated, not overwritten.
+
+**Analyze a specific directory or component:**
+
+```text
+analyze src/components/UserAuth.tsx
+analyze src/auth/
+```
+
+Good for deep-diving into a particular module or reviewing a subsystem after a refactor.
+
+**Capture dependency information:**
+
+```text
+analyze-deps
+```
+
+Scans dependency manifests (`package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`, etc.) and creates library pages for every declared dependency, recording package versions and which APIs the codebase actually uses.
+
+**Generate a technical deep dive document:**
+
+```text
+document-project
+```
+
+Produces a comprehensive technical deep dive at `wiki/deep-dive/technical-deep-dive.md` — a polished document covering architecture, core data models, subsystem deep dives, API layer, design patterns, and technical debt. Note: `analyze` automatically calls `document-project` at the end of every run.
+
+**Ask questions about the code:**
+
+```text
+How does authentication work in this codebase?
+What design patterns does the server module use?
+Which classes depend on the database layer?
+What anti-patterns have been identified?
+Where is the entry point for API requests?
+Which functions call the cache service?
+```
+
+Claude reads relevant wiki pages and answers with `file:line` source references. If the answer reveals a cross-cutting pattern not yet captured, a pattern page is created.
+
+**Recommended workflow for first-time codebase analysis:**
+
+1. `analyze src/` — full scan of the codebase
+2. `analyze-deps` — capture all library dependencies
+3. Ask questions to explore what was found
+4. `journal "initial codebase analysis"` — record the session
+
+**After a code change:**
+
+1. `lint` — find wiki pages that reference moved or deleted code
+2. `analyze src/changed-module/` — update the wiki for what changed
+
+### Working with a Portfolio Vault
+
+Portfolio vaults track investment holdings, assets, liabilities, and net worth. See the `help` output for the full operation set including `add-holding`, `add-asset`, `add-liability`, `refresh`, `portfolio-review`, `thesis-check`, `rebalance`, `tax-snapshot`, `net-worth-update`, `net-worth-trend`, `decision-log`, and `watchlist-add`.
+
+### Refreshing the Graph Viewer
+
+After performing operations in Claude, click **Refresh** in the browser toolbar (or press the `Refresh` button) to rebuild the graph from the vault's current `wiki/` contents. The graph preserves your active node position.
+
+---
+
 ## Architecture
 
 ```mermaid
