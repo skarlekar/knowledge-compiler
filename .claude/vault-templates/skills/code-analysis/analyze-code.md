@@ -24,7 +24,7 @@ If the argument is a single file, read it with the Read tool.
 
 If the argument is a directory, use Glob to discover all source files recursively:
 
-```
+```text
 **/*.js, **/*.ts, **/*.py, **/*.java, **/*.go, **/*.rs
 ```
 
@@ -51,6 +51,7 @@ For each identified element, check `wiki/index.md` to see if a page already exis
 **If it does exist:** read the existing page, then update it with new information. Do not overwrite information that is still accurate — add to it.
 
 Set frontmatter:
+
 - `source_files`: list the analyzed file(s) with relative paths from vault root
 - `language`: the file's language
 - `confidence`: `high` if source directly read; `medium` if inferred from partial context; `low` if based on naming/comments only
@@ -92,7 +93,7 @@ Add new pages to the appropriate sections. Update the Statistics section counts.
 
 **B. Append to `wiki/log.md`:**
 
-```
+```text
 ### YYYY-MM-DD HH:MM — Analyze: <path>
 
 - **Source analyzed**: `<path>`
@@ -103,13 +104,20 @@ Add new pages to the appropriate sections. Update the Statistics section counts.
 
 ### 9 — Invoke journal skill
 
-```
+```javascript
 Skill({ skill: "journal", args: "analyze: <path>" })
 ```
 
-### 10 — Report
+### 10 — Invoke document-project skill
+
+```javascript
+Skill({ skill: "document-project" })
+```
+
+### 11 — Report
 
 Tell the user:
+
 - How many files were analyzed
 - How many pages were created vs updated
 - Any anti-patterns flagged (with file:line references)

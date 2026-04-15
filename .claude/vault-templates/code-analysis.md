@@ -19,6 +19,7 @@ This is an LLM-maintained knowledge base for analyzing a software codebase. The 
 - `wiki/anti-patterns/` — Anti-patterns and technical debt identified in the codebase.
 - `wiki/modules/` — One page per module, package, or significant file grouping.
 - `wiki/journal/` — Analysis session journal entries.
+- `wiki/deep-dive/` — Generated technical deep dive documents.
 - `wiki/images/` — SVG and image files referenced by wiki pages. Served by the Express app at `/api/wiki/image?path=<wiki-root-relative-path>`.
 
 ## File Naming
@@ -195,6 +196,7 @@ When the user says "analyze [file-or-directory]":
 8. Add cross-links in both directions between all touched pages
 9. Update `wiki/index.md` and `wiki/log.md`
 10. Invoke the `journal` skill: `Skill({ skill: "journal", args: "analyze: <path>" })`
+11. Invoke the `document-project` skill: `Skill({ skill: "document-project" })`
 
 ### Analyze Dependencies
 
@@ -231,6 +233,14 @@ When the user says "lint" or "health check":
 5. Update `wiki/log.md`
 6. Invoke the `journal` skill: `Skill({ skill: "journal", args: "lint" })`
 
+### Document Project
+
+When the user says "document-project", "document project", or "generate deep dive":
+
+1. Invoke the `document-project` skill: `Skill({ skill: "document-project" })`
+
+The skill reads all existing wiki pages and source files, then generates a comprehensive Technical Deep Dive document saved to `wiki/deep-dive/technical-deep-dive.md`. Run `analyze` first to ensure the wiki is populated.
+
 ### Journal
 
 When the user says "journal" or "journal [description]":
@@ -238,6 +248,15 @@ When the user says "journal" or "journal [description]":
 Invoke the `journal` skill: `Skill({ skill: "journal", args: "<description>" })`
 
 The skill captures the current session into a structured journal entry. Session types for code-analysis vaults: `analyze`, `query`, `lint`, `mixed`.
+
+### Help
+
+When the user says "help", "/help", "what can you do", "what commands are available", or any similar request for guidance:
+
+Invoke the `help` skill:
+`Skill({ skill: "help" })`
+
+The skill detects the vault type and prints a complete formatted guide of all available operations with usage examples.
 
 ## Rules
 

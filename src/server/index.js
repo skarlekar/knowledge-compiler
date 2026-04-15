@@ -1,6 +1,7 @@
 import express from 'express';
-import { readdir, readFile, stat, access, writeFile } from 'fs/promises';
+import { readdir, readFile, stat, access, writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 
@@ -14,6 +15,7 @@ const PORT = process.env.PORT || 3000;
 const LEGACY_ROOT = path.resolve(__dirname, '..', '..');
 const LEGACY_WIKI_DIR = path.join(LEGACY_ROOT, 'wiki');
 const LEGACY_RAW_DIR = path.join(LEGACY_ROOT, 'raw');
+const TEMPLATES_DIR = path.join(LEGACY_ROOT, '.claude', 'vault-templates');
 
 // --- Vault registry ---
 const VAULTS_JSON_PATH = path.join(LEGACY_ROOT, 'vaults.json');
@@ -54,6 +56,7 @@ async function resolveVaultRoot(vaultId) {
 
 // --- Static files ---
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.json());
 
 // --- API: Vault registry (client receives id/name/template/purpose — path is stripped) ---
 app.get('/api/vaults', async (_req, res) => {
@@ -64,6 +67,303 @@ app.get('/api/vaults', async (_req, res) => {
   } catch (err) {
     console.error('Vault registry error:', err);
     res.json([]);
+  }
+});
+
+// --- API: Filesystem directory listing (for vault path picker) ---
+app.get('/api/fs/ls', async (req, res) => {
+  const requestedPath = req.query.path ? req.query.path : os.homedir();
+  const resolved = path.resolve(requestedPath);
+  try {
+    const entries = await readdir(resolved, { withFileTypes: true });
+    const dirs = entries
+      .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+      .map(e => e.name)
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    res.json({ path: resolved, parent: path.dirname(resolved), dirs });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// --- API: List available vault templates ---
+app.get('/api/vault-templates', async (_req, res) => {
+  try {
+    const entries = await readdir(TEMPLATES_DIR, { withFileTypes: true });
+    const templates = entries
+      .filter(e => e.isFile() && e.name.endsWith('.md'))
+      .map(e => {
+        const id = e.name.replace(/\.md$/, '');
+        const name = id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        return { id, name };
+      });
+    res.json(templates);
+  } catch (err) {
+    if (err.code === 'ENOENT') return res.json([]);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Helper: build a minimal index.md for a new vault
+function buildVaultIndex(vaultName, template, date) {
+  if (template === 'code-analysis') {
+    return `---
+title: "Index — ${vaultName}"
+type: concept
+tags: [index]
+created: ${date}
+updated: ${date}
+---
+
+# ${vaultName} — Index
+
+## Statistics
+
+| Type | Count |
+| --- | --- |
+| Classes | 0 |
+| Functions | 0 |
+| APIs | 0 |
+| Libraries | 0 |
+| Patterns | 0 |
+| Anti-Patterns | 0 |
+| Modules | 0 |
+| Journals | 0 |
+
+## Classes
+
+| Page | Description | Updated |
+| --- | --- | --- |
+
+## Functions
+
+| Page | Description | Updated |
+| --- | --- | --- |
+
+## APIs
+
+| Page | Description | Updated |
+| --- | --- | --- |
+
+## Libraries
+
+| Page | Description | Updated |
+| --- | --- | --- |
+
+## Patterns
+
+| Page | Description | Updated |
+| --- | --- | --- |
+
+## Anti-Patterns
+
+| Page | Description | Updated |
+| --- | --- | --- |
+
+## Modules
+
+| Page | Description | Updated |
+| --- | --- | --- |
+
+## Journals
+
+| Page | Session Type | Created | Outcome |
+| --- | --- | --- | --- |
+`;
+  }
+  return `---
+title: "Index — ${vaultName}"
+type: concept
+tags: [index]
+created: ${date}
+updated: ${date}
+---
+
+# ${vaultName} — Index
+
+## Statistics
+
+| Type | Count |
+| --- | --- |
+| Summaries | 0 |
+| Concepts | 0 |
+| Entities | 0 |
+| Synthesis | 0 |
+| Newsletters | 0 |
+| Journals | 0 |
+
+## Summaries
+
+| Page | Source | Created |
+| --- | --- | --- |
+
+## Concepts
+
+| Page | Tags | Confidence | Updated |
+| --- | --- | --- | --- |
+
+## Entities
+
+| Page | Tags | Confidence | Updated |
+| --- | --- | --- | --- |
+
+## Synthesis
+
+| Page | Tags | Updated |
+| --- | --- | --- |
+
+## Newsletters
+
+| Page | Topic | Created | Key Argument |
+| --- | --- | --- | --- |
+
+## Journals
+
+| Page | Session Type | Created | Outcome |
+| --- | --- | --- | --- |
+`;
+}
+
+// Helper: build a minimal log.md for a new vault
+function buildVaultLog(vaultName, template, date) {
+  return `# ${vaultName} — Activity Log\n\n### ${date} — Vault Created\n\n- **Source/Trigger**: New vault created via UI\n- **Template**: ${template}\n- **Pages created**: wiki/index.md, wiki/log.md\n`;
+}
+
+// --- API: Create a new vault ---
+app.post('/api/vaults', async (req, res) => {
+  try {
+    const { name, path: vaultPath, purpose, template } = req.body || {};
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'Vault name is required.' });
+    }
+    if (!vaultPath || typeof vaultPath !== 'string' || !vaultPath.trim()) {
+      return res.status(400).json({ error: 'Vault path is required.' });
+    }
+    if (!template || typeof template !== 'string' || !template.trim()) {
+      return res.status(400).json({ error: 'Template is required.' });
+    }
+
+    // Validate template file exists
+    const templateFilePath = path.join(TEMPLATES_DIR, `${template.trim()}.md`);
+    try {
+      await access(templateFilePath);
+    } catch {
+      return res.status(400).json({ error: `Unknown template: ${template}` });
+    }
+
+    // Derive vault ID: lowercase, hyphens for non-alphanumeric
+    const vaultId = name.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    if (!vaultId) {
+      return res.status(400).json({ error: 'Could not derive a valid vault ID from the name provided.' });
+    }
+
+    // Resolve to absolute path
+    const resolvedVaultPath = path.resolve(vaultPath.trim());
+
+    // Check for duplicate ID in registry
+    const registry = await loadVaultRegistry();
+    if (registry.find(v => v.id === vaultId)) {
+      return res.status(409).json({ error: `A vault with ID "${vaultId}" already exists. Choose a different name.` });
+    }
+
+    // Reject if path already has CLAUDE.md (already initialised as a vault)
+    const existingClaude = path.join(resolvedVaultPath, 'CLAUDE.md');
+    try {
+      await access(existingClaude);
+      return res.status(409).json({ error: 'A vault already exists at that path (CLAUDE.md found).' });
+    } catch {
+      // Expected — no existing vault at this path
+    }
+
+    // Create directory structure
+    const RESEARCH_SUBDIRS = [
+      'raw', 'wiki', 'wiki/summaries', 'wiki/concepts', 'wiki/entities',
+      'wiki/synthesis', 'wiki/newsletters', 'wiki/journal', 'wiki/presentations', 'wiki/images'
+    ];
+    const CODE_SUBDIRS = [
+      'raw', 'wiki', 'wiki/classes', 'wiki/functions', 'wiki/apis',
+      'wiki/libraries', 'wiki/patterns', 'wiki/anti-patterns', 'wiki/modules',
+      'wiki/journal', 'wiki/deep-dive', 'wiki/images'
+    ];
+    const subdirs = template.trim() === 'code-analysis' ? CODE_SUBDIRS : RESEARCH_SUBDIRS;
+    for (const d of subdirs) {
+      await mkdir(path.join(resolvedVaultPath, d), { recursive: true });
+    }
+
+    // Write CLAUDE.md from template
+    const templateContent = await readFile(templateFilePath, 'utf-8');
+    await writeFile(path.join(resolvedVaultPath, 'CLAUDE.md'), templateContent);
+
+    // Copy skills into .claude/commands/ so the vault is fully self-contained
+    const vaultCommandsDir = path.join(resolvedVaultPath, '.claude', 'commands');
+    await mkdir(vaultCommandsDir, { recursive: true });
+
+    // Vault-type-specific skills
+    const typeSkillsDir = path.join(TEMPLATES_DIR, 'skills', template.trim());
+    try {
+      const skillFiles = await readdir(typeSkillsDir);
+      for (const f of skillFiles) {
+        if (f.endsWith('.md')) {
+          const content = await readFile(path.join(typeSkillsDir, f), 'utf-8');
+          await writeFile(path.join(vaultCommandsDir, f), content);
+        }
+      }
+    } catch (err) {
+      if (err.code !== 'ENOENT') console.warn(`[VAULTS] Could not copy type skills: ${err.message}`);
+    }
+
+    // Universal skills: journal, lint, help
+    const UNIVERSAL_SKILLS = ['journal.md', 'lint.md', 'help.md'];
+    const universalCommandsDir = path.join(LEGACY_ROOT, '.claude', 'commands');
+    for (const f of UNIVERSAL_SKILLS) {
+      try {
+        const content = await readFile(path.join(universalCommandsDir, f), 'utf-8');
+        await writeFile(path.join(vaultCommandsDir, f), content);
+      } catch (err) {
+        if (err.code !== 'ENOENT') console.warn(`[VAULTS] Could not copy ${f}: ${err.message}`);
+      }
+    }
+
+    // Copy reset-wiki.sh to vault root
+    const resetScriptSrc = path.join(TEMPLATES_DIR, 'scripts', `reset-wiki-${template.trim()}.sh`);
+    const resetScriptDest = path.join(resolvedVaultPath, 'reset-wiki.sh');
+    try {
+      const resetContent = await readFile(resetScriptSrc, 'utf-8');
+      await writeFile(resetScriptDest, resetContent, { mode: 0o755 });
+    } catch (err) {
+      if (err.code !== 'ENOENT') console.warn(`[VAULTS] Could not copy reset script: ${err.message}`);
+    }
+
+    // Write wiki/index.md and wiki/log.md
+    const today = new Date().toISOString().slice(0, 10);
+    await writeFile(path.join(resolvedVaultPath, 'wiki', 'index.md'), buildVaultIndex(name.trim(), template.trim(), today));
+    await writeFile(path.join(resolvedVaultPath, 'wiki', 'log.md'), buildVaultLog(name.trim(), template.trim(), today));
+
+    // Update vaults.json
+    const newEntry = {
+      id: vaultId,
+      name: name.trim(),
+      template: template.trim(),
+      path: resolvedVaultPath,
+      purpose: (purpose || '').trim() || undefined
+    };
+    if (newEntry.purpose === undefined) delete newEntry.purpose;
+    const updatedRegistry = [...registry, newEntry];
+    await writeFile(VAULTS_JSON_PATH, JSON.stringify(updatedRegistry, null, 2));
+
+    // Invalidate registry cache so next request picks up the new entry
+    _vaultRegistry = null;
+
+    console.log(`[VAULTS] Created vault "${vaultId}" at ${resolvedVaultPath}`);
+    res.json({ id: vaultId, name: newEntry.name, template: newEntry.template, purpose: newEntry.purpose || '' });
+  } catch (err) {
+    console.error('Vault creation error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

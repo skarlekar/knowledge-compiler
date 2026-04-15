@@ -100,15 +100,15 @@ function showToast(message, type = 'info', durationMs = 3000) {
   // TASK-040  FR-NAV-002 — synchronize graph highlight, content, breadcrumb
   let activeNodeId = null;
 
-  function navigateTo(nodeId, skipRecord) {
+  function navigateTo(nodeId, skipRecord, skipCentre) {
     if (!data.nodes.has(nodeId)) return;
     activeNodeId = nodeId;
 
     // (a) Graph highlight — FR-GV-005
     Visualization.setActive(nodeId);
 
-    // (b) Centre graph on node
-    Visualization.centreOnNode(nodeId);
+    // (b) Centre graph on node (skipped when caller will fitToView instead)
+    if (!skipCentre) Visualization.centreOnNode(nodeId);
 
     // (c) Render content — FR-CR-001
     ContentRenderer.render(nodeId);
@@ -129,7 +129,8 @@ function showToast(message, type = 'info', durationMs = 3000) {
 
   // --- Default selection — TASK-022  FR-GV-006 ---
   const defaultNode = data.nodes.has('index.md') ? 'index.md' : data.nodeList[0].id;
-  navigateTo(defaultNode);
+  navigateTo(defaultNode, false, true);  // skipCentre — fitToView handles framing
+  Visualization.fitToView();
 
   // -------------------------------------------------------------------------
   // Vault switching
@@ -139,6 +140,8 @@ function showToast(message, type = 'info', durationMs = 3000) {
     showToast(`Switching to ${newVaultName}…`, 'info', 2000);
     activeVaultId = newVaultId;
     localStorage.setItem('kc-active-vault', newVaultId);
+    vaultSelect.value = newVaultId;
+    vaultNameEl.textContent = newVaultName;
     document.title = `Knowledge Compiler — ${newVaultName}`;
     try {
       data = await GraphBuilder.build(activeVaultId);
@@ -158,7 +161,8 @@ function showToast(message, type = 'info', durationMs = 3000) {
         Visualization.applyFilter(hiddenTypes);
       });
       const indexNode = data.nodes.has('index.md') ? 'index.md' : data.nodeList[0].id;
-      navigateTo(indexNode);
+      navigateTo(indexNode, false, true);  // skipCentre
+      Visualization.fitToView();
       showToast(`Switched to ${newVaultName} — ${data.nodeList.length} nodes, ${data.edges.length} edges`, 'success');
     } catch (err) {
       console.error('Vault switch failed:', err);
@@ -171,6 +175,220 @@ function showToast(message, type = 'info', durationMs = 3000) {
       switchToVault(vaultSelect.value);
     });
   }
+
+  // --- New Vault modal — fetch templates and wire up UI ---
+  const btnNewVault = document.getElementById('btn-new-vault');
+  const modalOverlay = document.getElementById('vault-modal-overlay');
+  const modalClose = document.getElementById('vault-modal-close');
+  const modalCancel = document.getElementById('vault-modal-cancel');
+  const modalCreate = document.getElementById('vault-modal-create');
+  const modalError = document.getElementById('vault-create-error');
+  const inputName = document.getElementById('vault-new-name');
+  const inputPath = document.getElementById('vault-new-path');
+  const selectTemplate = document.getElementById('vault-new-template');
+  const inputPurpose = document.getElementById('vault-new-purpose');
+
+  // Fetch available templates once and populate the select
+  let _templatesLoaded = false;
+  async function ensureTemplatesLoaded() {
+    if (_templatesLoaded) return;
+    try {
+      const tr = await fetch('/api/vault-templates');
+      const templates = await tr.json();
+      selectTemplate.textContent = '';
+      for (const t of templates) {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.name;
+        selectTemplate.appendChild(opt);
+      }
+      _templatesLoaded = true;
+    } catch (err) {
+      console.warn('Could not load vault templates:', err.message);
+    }
+  }
+
+  function openVaultModal() {
+    ensureTemplatesLoaded();
+    // Reset form
+    inputName.value = '';
+    inputPath.value = '';
+    inputPurpose.value = '';
+    modalError.classList.add('hidden');
+    modalError.textContent = '';
+    modalCreate.disabled = false;
+    modalOverlay.classList.remove('hidden');
+    setTimeout(() => inputName.focus(), 50);
+  }
+
+  function closeVaultModal() {
+    modalOverlay.classList.add('hidden');
+  }
+
+  btnNewVault.addEventListener('click', openVaultModal);
+  modalClose.addEventListener('click', closeVaultModal);
+  modalCancel.addEventListener('click', closeVaultModal);
+
+  // Close on overlay click (outside modal box)
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) closeVaultModal();
+  });
+
+  // Close on Escape (only if dir browser is not open)
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modalOverlay.classList.contains('hidden')) {
+      const dirBrowser = document.getElementById('dir-browser');
+      if (!dirBrowser.classList.contains('hidden')) {
+        dirBrowser.classList.add('hidden');
+      } else {
+        closeVaultModal();
+      }
+    }
+  });
+
+  // --- Inline directory browser ---
+  const btnBrowsePath = document.getElementById('btn-browse-path');
+  const dirBrowser = document.getElementById('dir-browser');
+  const dirBrowserCurrent = document.getElementById('dir-browser-current');
+  const dirBrowserList = document.getElementById('dir-browser-list');
+  const dirBrowserUp = document.getElementById('dir-browser-up');
+  const dirBrowserSelect = document.getElementById('dir-browser-select');
+  const dirBrowserCancel = document.getElementById('dir-browser-cancel');
+
+  let _currentBrowsePath = '';
+
+  async function browseDir(browsePath) {
+    try {
+      const r = await fetch(`/api/fs/ls?path=${encodeURIComponent(browsePath)}`);
+      const data = await r.json();
+      if (!r.ok) {
+        dirBrowserCurrent.textContent = 'Error: ' + (data.error || 'Could not read directory');
+        dirBrowserList.textContent = '';
+        return;
+      }
+      _currentBrowsePath = data.path;
+      dirBrowserUp.disabled = data.path === data.parent;
+      dirBrowserUp.dataset.parent = data.parent;
+      dirBrowserCurrent.textContent = data.path;
+      dirBrowserList.textContent = '';
+      if (data.dirs.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'empty';
+        li.textContent = 'No subdirectories';
+        dirBrowserList.appendChild(li);
+      } else {
+        for (const name of data.dirs) {
+          const li = document.createElement('li');
+          li.textContent = name;
+          li.addEventListener('click', () => {
+            browseDir(data.path + '/' + name);
+          });
+          dirBrowserList.appendChild(li);
+        }
+      }
+    } catch (err) {
+      dirBrowserCurrent.textContent = 'Error: ' + err.message;
+    }
+  }
+
+  btnBrowsePath.addEventListener('click', async () => {
+    const existingPath = inputPath.value.trim();
+    const startPath = existingPath || '';
+    dirBrowser.classList.remove('hidden');
+    await browseDir(startPath);
+  });
+
+  dirBrowserUp.addEventListener('click', () => {
+    const parent = dirBrowserUp.dataset.parent;
+    if (parent) browseDir(parent);
+  });
+
+  dirBrowserSelect.addEventListener('click', () => {
+    inputPath.value = _currentBrowsePath;
+    dirBrowser.classList.add('hidden');
+  });
+
+  dirBrowserCancel.addEventListener('click', () => {
+    dirBrowser.classList.add('hidden');
+  });
+
+  modalCreate.addEventListener('click', async () => {
+    const name = inputName.value.trim();
+    const vaultPath = inputPath.value.trim();
+    const template = selectTemplate.value;
+    const purpose = inputPurpose.value.trim();
+
+    // Client-side validation
+    if (!name) {
+      modalError.textContent = 'Vault name is required.';
+      modalError.classList.remove('hidden');
+      inputName.focus();
+      return;
+    }
+    if (!vaultPath) {
+      modalError.textContent = 'Filesystem path is required.';
+      modalError.classList.remove('hidden');
+      inputPath.focus();
+      return;
+    }
+
+    modalError.classList.add('hidden');
+    modalCreate.disabled = true;
+    modalCreate.textContent = 'Creating…';
+
+    try {
+      const res = await fetch('/api/vaults', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, path: vaultPath, template, purpose })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        modalError.textContent = result.error || 'Vault creation failed.';
+        modalError.classList.remove('hidden');
+        return;
+      }
+
+      // Success — close modal, reload vault list, switch to new vault
+      closeVaultModal();
+      showToast(`Vault "${result.name}" created.`, 'success', 3000);
+
+      // Re-fetch vault registry and rebuild UI
+      const vr2 = await fetch('/api/vaults');
+      vaults = await vr2.json();
+
+      // Rebuild vault selector options (the change listener is already attached)
+      vaultSelect.textContent = '';
+      for (const v of vaults) {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = v.name;
+        vaultSelect.appendChild(opt);
+      }
+
+      // Show dropdown when 2+ vaults exist; show plain name for single vault
+      if (vaults.length === 1) {
+        vaultSelect.classList.add('hidden');
+        vaultNameEl.classList.remove('hidden');
+      } else {
+        vaultSelect.classList.remove('hidden');
+        vaultNameEl.classList.add('hidden');
+      }
+      vaultSelectorContainer.classList.remove('hidden');
+
+      // Switch to the newly created vault (also updates vaultSelect.value)
+      await switchToVault(result.id);
+
+    } catch (err) {
+      modalError.textContent = 'Network error: ' + err.message;
+      modalError.classList.remove('hidden');
+    } finally {
+      modalCreate.disabled = false;
+      modalCreate.textContent = 'Create Vault';
+    }
+  });
 
   // --- Refresh — TASK-058, TASK-059, TASK-060  FR-RF-001..003 ---
   const btnRefresh = document.getElementById('btn-refresh');
@@ -213,7 +431,8 @@ function showToast(message, type = 'info', durationMs = 3000) {
       const restoreNode = data.nodes.has(previousActive) ? previousActive
         : data.nodes.has('index.md') ? 'index.md'
         : data.nodeList[0].id;
-      navigateTo(restoreNode);
+      navigateTo(restoreNode, false, true);  // skipCentre
+      Visualization.fitToView();
 
       showToast(`Graph refreshed — ${data.nodeList.length} nodes, ${data.edges.length} edges`, 'success');
     } catch (err) {

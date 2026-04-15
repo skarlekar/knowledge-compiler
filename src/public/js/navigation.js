@@ -102,6 +102,12 @@ const Navigation = (() => {
     const searchInput = document.getElementById('search-input');
     const searchFocused = document.activeElement === searchInput;
 
+    // Suppress all keyboard shortcuts when any text input, textarea, or select is active
+    const tag = document.activeElement && document.activeElement.tagName.toLowerCase();
+    const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select'
+      || (document.activeElement && document.activeElement.isContentEditable);
+    if (isTyping) return;
+
     // Ctrl+/ or Cmd+/ — focus search
     if ((e.ctrlKey || e.metaKey) && e.key === '/') {
       e.preventDefault();

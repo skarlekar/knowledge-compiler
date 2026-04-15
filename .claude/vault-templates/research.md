@@ -330,6 +330,15 @@ The skill captures the current session into a structured journal entry at `wiki/
 
 **Boundary with Synthesis:** If a session produces a cross-cutting insight about the *domain*, create a synthesis page. If it produces notes about the *process* of reaching that insight, create a journal entry. Both can be created from the same session.
 
+### Help
+
+When the user says "help", "/help", "what can you do", "what commands are available", or any similar request for guidance:
+
+Invoke the `help` skill:
+`Skill({ skill: "help" })`
+
+The skill detects the vault type and prints a complete formatted guide of all available operations with usage examples.
+
 ## Rules
 
 - Never modify files in `raw/`

@@ -83,14 +83,6 @@ const Visualization = (() => {
 
     svg.call(zoomBehaviour);
 
-    // Force simulation — TASK-018  FR-GV-001
-    simulation = d3.forceSimulation(data.nodeList)
-      .force('link', d3.forceLink(data.edges).id(d => d.id).distance(80))
-      .force('charge', d3.forceManyBody().strength(-200))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(NODE_RADIUS + 4))
-      .on('tick', ticked);
-
     // Draw edges
     const edgeSelection = gEdges.selectAll('line')
       .data(data.edges)
@@ -143,10 +135,34 @@ const Visualization = (() => {
       .text(d => d.displayName)
       .attr('dy', NODE_RADIUS + 12);
 
-    // Store selections for tick updates
+    // Store selections for tick updates — must be set before ticked() is called
     svg.__edges = edgeSelection;
     svg.__nodes = nodeSelection;
     svg.__labels = labelSelection;
+
+    // Force simulation — TASK-018  FR-GV-001
+    // Stop immediately and pre-tick synchronously so node positions are stable
+    // before the first paint.  The DOM selections above must exist first so that
+    // the ticked() call below can write cx/cy/x1/y1 etc. into the elements.
+    simulation = d3.forceSimulation(data.nodeList)
+      .force('link', d3.forceLink(data.edges).id(d => d.id).distance(80))
+      .force('charge', d3.forceManyBody().strength(-200))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('collision', d3.forceCollide().radius(NODE_RADIUS + 4))
+      .stop();
+
+    // Pre-compute stable positions synchronously — same tick count D3 would
+    // normally run over time.  Runs in <50 ms for typical graph sizes.
+    const totalTicks = Math.ceil(
+      Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())
+    );
+    for (let i = 0; i < totalTicks; i++) simulation.tick();
+
+    // Apply the pre-computed positions to the DOM immediately.
+    ticked();
+
+    // Restart with a tiny alpha for gentle micro-adjustment animation.
+    simulation.on('tick', ticked).alpha(0.05).restart();
 
     // Render legend — TASK-030  FR-GV-014
     renderLegend(data.nodeList);

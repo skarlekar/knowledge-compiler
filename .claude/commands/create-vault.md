@@ -18,6 +18,7 @@ Ask the user for the following (or use the provided argument as the vault name):
 4. **Template**: List available templates by reading `.md` files from `.claude/vault-templates/` (excluding the `skills/` subdirectory). Present them to the user and ask which to use.
 
 To list available templates:
+
 ```bash
 ls .claude/vault-templates/*.md 2>/dev/null | xargs -I{} basename {} .md
 ```
@@ -25,6 +26,7 @@ ls .claude/vault-templates/*.md 2>/dev/null | xargs -I{} basename {} .md
 ### 2 — Derive vault ID
 
 From the vault name:
+
 - Lowercase all characters
 - Replace spaces and non-alphanumeric characters with hyphens
 - Remove leading and trailing hyphens
@@ -34,9 +36,11 @@ Example: `"FastAPI Analysis"` → `fastapi-analysis`
 ### 3 — Validate
 
 **A. Check for existing CLAUDE.md at the vault location:**
+
 ```bash
 ls "<vault-location>/CLAUDE.md" 2>&1
 ```
+
 If the file exists, stop and report: "A vault already exists at `<location>` (CLAUDE.md found). Choose a different location or provide a path to an empty directory."
 
 **B. Check for duplicate vault ID in `vaults.json`:**
@@ -54,6 +58,7 @@ mkdir -p "<vault-location>/.claude/commands"
 ```
 
 For **research** template, also create:
+
 ```bash
 mkdir -p "<vault-location>/wiki/summaries"
 mkdir -p "<vault-location>/wiki/concepts"
@@ -64,6 +69,7 @@ mkdir -p "<vault-location>/wiki/presentations"
 ```
 
 For **code-analysis** template, also create:
+
 ```bash
 mkdir -p "<vault-location>/wiki/classes"
 mkdir -p "<vault-location>/wiki/functions"
@@ -92,20 +98,32 @@ cp .claude/vault-templates/skills/<template>/* "<vault-location>/.claude/command
 ```
 
 **B. Copy universal skills:**
-Copy `journal.md` and `lint.md` from the project-root `.claude/commands/` to the vault's `.claude/commands/`:
+Copy `journal.md`, `lint.md`, and `help.md` from the project-root `.claude/commands/` to the vault's `.claude/commands/`:
 
 ```bash
 cp .claude/commands/journal.md "<vault-location>/.claude/commands/journal.md"
 cp .claude/commands/lint.md "<vault-location>/.claude/commands/lint.md"
+cp .claude/commands/help.md "<vault-location>/.claude/commands/help.md"
 ```
 
 This ensures each vault is fully self-contained with all skills it needs.
+
+**C. Copy reset script:**
+Copy the template-specific reset script to the vault root and make it executable:
+
+```bash
+cp .claude/vault-templates/scripts/reset-wiki-<template>.sh "<vault-location>/reset-wiki.sh"
+chmod +x "<vault-location>/reset-wiki.sh"
+```
+
+Replace `<template>` with the chosen template name (e.g., `research` or `code-analysis`).
 
 ### 7 — Create template wiki files
 
 **A. Create `wiki/index.md`:**
 
 For a **research** vault:
+
 ```markdown
 ---
 title: "Knowledge Base Index"
@@ -160,6 +178,7 @@ Every page in the wiki must have an entry here.
 ```
 
 For a **code-analysis** vault:
+
 ```markdown
 ---
 title: "Knowledge Base Index"
@@ -261,6 +280,7 @@ Each entry follows this format:
 Read `vaults.json` from the project root. If it does not exist, start with an empty array `[]`.
 
 Add a new entry:
+
 ```json
 {
   "id": "<vault-id>",
@@ -276,6 +296,7 @@ Write the updated array back to `vaults.json`.
 ### 9 — Report
 
 Tell the user:
+
 - Vault created at `<vault-location>`
 - Template used: `<template>`
 - Vault ID: `<vault-id>` (used in the UI vault selector and API calls)

@@ -15,6 +15,7 @@
       <div class="vault-selector-container" id="vault-selector-container">
         <select id="vault-select" class="vault-selector" title="Switch vault"></select>
         <span id="vault-name" class="vault-name"></span>
+        <button id="btn-new-vault" class="toolbar-btn btn-new-vault" title="Create new vault">+</button>
       </div>
     </div>
     <div class="toolbar-center">
@@ -85,6 +86,55 @@
   <!-- NFR-REL-001 — Empty wiki message -->
   <div id="empty-message" class="empty-message hidden">
     No wiki files found. Add Markdown files to the <code>wiki/</code> directory to get started.
+  </div>
+
+  <!-- New Vault Modal -->
+  <div id="vault-modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="vault-modal-title">
+    <div class="modal" id="vault-modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="vault-modal-title">Create New Vault</h2>
+        <button id="vault-modal-close" class="modal-close" title="Close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="vault-new-name">Vault Name <span class="form-required">*</span></label>
+          <input type="text" id="vault-new-name" placeholder="My Knowledge Base" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="vault-new-path">Filesystem Path <span class="form-required">*</span></label>
+          <div class="path-input-row">
+            <input type="text" id="vault-new-path" placeholder="/Users/you/Documents/my-knowledge-base" autocomplete="off" />
+            <button type="button" id="btn-browse-path" class="modal-btn modal-btn-secondary btn-browse" title="Browse directories">Browse…</button>
+          </div>
+          <span class="form-hint">Absolute path where the vault will be created. The directory will be initialised if it does not exist.</span>
+          <!-- Inline directory browser -->
+          <div id="dir-browser" class="dir-browser hidden">
+            <div class="dir-browser-nav">
+              <button type="button" id="dir-browser-up" class="dir-nav-btn" title="Go up">&#8593; Up</button>
+              <span id="dir-browser-current" class="dir-browser-current"></span>
+            </div>
+            <ul id="dir-browser-list" class="dir-browser-list"></ul>
+            <div class="dir-browser-footer">
+              <button type="button" id="dir-browser-select" class="modal-btn modal-btn-primary">Select This Folder</button>
+              <button type="button" id="dir-browser-cancel" class="modal-btn modal-btn-secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="vault-new-template">Template <span class="form-required">*</span></label>
+          <select id="vault-new-template"></select>
+        </div>
+        <div class="form-group">
+          <label for="vault-new-purpose">Purpose <span class="form-optional">(optional)</span></label>
+          <textarea id="vault-new-purpose" rows="2" placeholder="What is this vault for?"></textarea>
+        </div>
+        <div id="vault-create-error" class="form-error hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="vault-modal-cancel" class="modal-btn modal-btn-secondary">Cancel</button>
+        <button id="vault-modal-create" class="modal-btn modal-btn-primary">Create Vault</button>
+      </div>
+    </div>
   </div>
 
   <!-- Vendor libs (bundled locally — NFR-PORT-003, NFR-MAINT-001) -->
