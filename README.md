@@ -56,53 +56,39 @@ node server/index.js
 
 ## Architecture
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                        Browser (UI)                              │
-│                                                                   │
-│  ┌─────────────────┐         ┌───────────────────────────────┐  │
-│  │   Graph Panel   │         │       Content Panel           │  │
-│  │  (D3 force-     │◄──────► │  Markdown + Mermaid renderer  │  │
-│  │   directed SVG) │  sync   │  Metadata bar (type/tags/conf)│  │
-│  └────────┬────────┘         └───────────────────────────────┘  │
-│           │                                                       │
-│  ┌────────▼─────────────────────────────────────────────────┐   │
-│  │  app.js — central controller                              │   │
-│  │  graph.js · visualization.js · content.js                │   │
-│  │  navigation.js · search.js                               │   │
-│  └────────┬─────────────────────────────────────────────────┘   │
-└───────────┼─────────────────────────────────────────────────────┘
-            │  REST API (localhost:3000)
-┌───────────▼─────────────────────────────────────────────────────┐
-│                    Express Server (src/server/index.js)           │
-│                                                                   │
-│  /api/vaults          vault registry (read + create)             │
-│  /api/vault-templates list available templates                   │
-│  /api/fs/ls           directory browser for vault path picker    │
-│  /api/wiki/files      discover all .md files in vault/wiki/      │
-│  /api/wiki/file       read a single wiki file                    │
-│  /api/wiki/image      serve images from wiki/images/             │
-│  /api/raw/upload      upload files to vault/raw/                 │
-└───────────┬─────────────────────────────────────────────────────┘
-            │  Filesystem
-┌───────────▼─────────────────────────────────────────────────────┐
-│                   Vaults (machine-local, not in git)              │
-│                                                                   │
-│  vault-root/                                                      │
-│  ├── CLAUDE.md              schema for this vault type            │
-│  ├── reset-wiki.sh          vault-type-specific reset script      │
-│  ├── raw/                   immutable source documents            │
-│  ├── wiki/                  LLM-maintained pages                  │
-│  └── .claude/commands/      skills (operations) for this vault    │
-└─────────────────────────────────────────────────────────────────┘
-            ▲
-            │ directs
-┌───────────┴─────────────────────────────────────────────────────┐
-│              LLM (Claude Code / Claude.ai / any LLM)              │
-│                                                                   │
-│  Reads CLAUDE.md schema → writes wiki/ pages → follows skills    │
-│  Never modifies raw/  ·  Always updates index.md and log.md      │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph Browser["Browser (UI)"]
+        GP["Graph Panel\n(D3 force-directed SVG)"]
+        CP["Content Panel\n(Markdown · Mermaid · Metadata)"]
+        AC["app.js — central controller\ngraph.js · visualization.js · content.js\nnavigation.js · search.js"]
+        GP <-->|sync| CP
+        GP --> AC
+        CP --> AC
+    end
+
+    subgraph Server["Express Server — src/server/index.js"]
+        API1["GET/POST /api/vaults\nvault registry — read & create"]
+        API2["GET /api/vault-templates\nlist available templates"]
+        API3["GET /api/fs/ls\ndirectory browser for path picker"]
+        API4["GET /api/wiki/files · /api/wiki/file\ndiscover & read wiki pages"]
+        API5["GET /api/wiki/image\nserve images from wiki/images/"]
+        API6["POST /api/raw/upload\nupload files to vault/raw/"]
+    end
+
+    subgraph Vault["Vault — machine-local, not in git"]
+        VM["CLAUDE.md\nvault schema"]
+        VR["raw/\nimmutable sources"]
+        VW["wiki/\nLLM-maintained pages"]
+        VS["reset-wiki.sh"]
+        VC[".claude/commands/\nskills for this vault"]
+    end
+
+    LLM["LLM\nClaude Code · Claude.ai · any LLM\n\nReads CLAUDE.md → writes wiki/ → follows skills\nNever modifies raw/ · Always updates index & log"]
+
+    AC -->|REST API :3000| Server
+    Server -->|filesystem| Vault
+    LLM -->|directs| Vault
 ```
 
 ### Component Breakdown
