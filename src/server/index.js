@@ -11,10 +11,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Legacy single-vault directories (used when no vaults.json or in legacy fallback mode)
 const LEGACY_ROOT = path.resolve(__dirname, '..', '..');
-const LEGACY_WIKI_DIR = path.join(LEGACY_ROOT, 'wiki');
-const LEGACY_RAW_DIR = path.join(LEGACY_ROOT, 'raw');
 const TEMPLATES_DIR = path.join(LEGACY_ROOT, '.claude', 'vault-templates');
 
 // --- Vault registry ---
@@ -40,8 +37,8 @@ async function loadVaultRegistry() {
 /**
  * Resolve the vault root path for a given vault ID.
  * - If vaultId is provided, look it up in the registry.
- * - If no vaultId, return the first vault's path, or fall back to LEGACY_ROOT.
- * Throws a 404-style error if the vault ID is unknown.
+ * - If no vaultId, return the first vault's path.
+ * Throws a 404-style error if the vault ID is unknown or no vaults are registered.
  */
 async function resolveVaultRoot(vaultId) {
   const registry = await loadVaultRegistry();
@@ -51,7 +48,7 @@ async function resolveVaultRoot(vaultId) {
     return vault.path;
   }
   if (registry.length > 0) return registry[0].path;
-  return LEGACY_ROOT;
+  throw Object.assign(new Error('No vaults registered. Create one via the UI.'), { status: 404 });
 }
 
 // --- Static files ---
@@ -614,7 +611,6 @@ app.listen(PORT, '127.0.0.1', async () => {
     console.log(`Registered vaults: ${ids}`);
     console.log(`Default wiki: ${registry[0].path}/wiki`);
   } else {
-    console.log('No vault registry found; using legacy wiki directory.');
-    console.log(`Serving wiki from: ${LEGACY_WIKI_DIR}`);
+    console.log('No vaults registered. Create one via the UI at http://127.0.0.1:' + PORT);
   }
 });

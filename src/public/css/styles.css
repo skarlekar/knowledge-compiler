@@ -445,6 +445,23 @@ html, body {
   padding: 32px;
 }
 
+.welcome-content {
+  text-align: center;
+}
+.welcome-content h2 {
+  font-size: 1.4em;
+  margin-bottom: 12px;
+  color: #1a1a2e;
+}
+.welcome-content p {
+  margin: 8px 0;
+  font-size: 15px;
+}
+.welcome-hint {
+  color: #888;
+  font-size: 13px;
+}
+
 /* --- Utility ------------------------------------------------------------ */
 .hidden { display: none !important; }
 

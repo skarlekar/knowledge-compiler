@@ -49,8 +49,9 @@ function showToast(message, type = 'info', durationMs = 3000) {
   }
 
   if (vaults.length === 0) {
-    // Legacy mode — hide vault selector entirely
-    vaultSelectorContainer.classList.add('hidden');
+    // No vaults — hide selector and name label but keep "+" button visible
+    vaultSelect.classList.add('hidden');
+    vaultNameEl.classList.add('hidden');
     activeVaultId = null;
   } else {
     const stored = localStorage.getItem('kc-active-vault');
@@ -85,52 +86,23 @@ function showToast(message, type = 'info', durationMs = 3000) {
   }
 
   // -------------------------------------------------------------------------
-  // Build initial graph
+  // Shared state — accessible by graph init, switchToVault, refresh, etc.
   // -------------------------------------------------------------------------
-  let data = await GraphBuilder.build(activeVaultId);
-
-  // NFR-REL-001 — empty wiki
-  if (!data.nodeList.length) {
-    document.getElementById('panels').classList.add('hidden');
-    document.getElementById('empty-message').classList.remove('hidden');
-    return;
-  }
+  let data = { nodes: new Map(), nodeList: [], edges: [] };
+  let activeNodeId = null;
 
   // --- Central navigation function ---
   // TASK-040  FR-NAV-002 — synchronize graph highlight, content, breadcrumb
-  let activeNodeId = null;
-
   function navigateTo(nodeId, skipRecord, skipCentre) {
     if (!data.nodes.has(nodeId)) return;
     activeNodeId = nodeId;
-
-    // (a) Graph highlight — FR-GV-005
     Visualization.setActive(nodeId);
-
-    // (b) Centre graph on node (skipped when caller will fitToView instead)
     if (!skipCentre) Visualization.centreOnNode(nodeId);
-
-    // (c) Render content — FR-CR-001
     ContentRenderer.render(nodeId);
-
-    // (d) Breadcrumb — FR-NAV-004
     if (!skipRecord) {
       Navigation.recordNavigation(nodeId);
     }
   }
-
-  // --- Initialize modules ---
-  ContentRenderer.init(data.nodes, navigateTo, activeVaultId);
-  Visualization.init(data, navigateTo);
-  Navigation.init(data.nodes, navigateTo);
-  Search.init(data.nodeList, navigateTo, (hiddenTypes) => {
-    Visualization.applyFilter(hiddenTypes);
-  });
-
-  // --- Default selection — TASK-022  FR-GV-006 ---
-  const defaultNode = data.nodes.has('index.md') ? 'index.md' : data.nodeList[0].id;
-  navigateTo(defaultNode, false, true);  // skipCentre — fitToView handles framing
-  Visualization.fitToView();
 
   // -------------------------------------------------------------------------
   // Vault switching
@@ -148,6 +120,8 @@ function showToast(message, type = 'info', durationMs = 3000) {
       if (!data.nodeList.length) {
         document.getElementById('panels').classList.add('hidden');
         document.getElementById('empty-message').classList.remove('hidden');
+        document.getElementById('empty-message').textContent =
+          'No wiki files found in this vault. Add Markdown files to the wiki/ directory to get started.';
         showToast(`${newVaultName} — no wiki files found.`, 'info');
         return;
       }
@@ -176,7 +150,9 @@ function showToast(message, type = 'info', durationMs = 3000) {
     });
   }
 
-  // --- New Vault modal — fetch templates and wire up UI ---
+  // -------------------------------------------------------------------------
+  // New Vault modal — always wired up so "+" works even on a fresh clone
+  // -------------------------------------------------------------------------
   const btnNewVault = document.getElementById('btn-new-vault');
   const modalOverlay = document.getElementById('vault-modal-overlay');
   const modalClose = document.getElementById('vault-modal-close');
@@ -260,28 +236,28 @@ function showToast(message, type = 'info', durationMs = 3000) {
   async function browseDir(browsePath) {
     try {
       const r = await fetch(`/api/fs/ls?path=${encodeURIComponent(browsePath)}`);
-      const data = await r.json();
+      const dirData = await r.json();
       if (!r.ok) {
-        dirBrowserCurrent.textContent = 'Error: ' + (data.error || 'Could not read directory');
+        dirBrowserCurrent.textContent = 'Error: ' + (dirData.error || 'Could not read directory');
         dirBrowserList.textContent = '';
         return;
       }
-      _currentBrowsePath = data.path;
-      dirBrowserUp.disabled = data.path === data.parent;
-      dirBrowserUp.dataset.parent = data.parent;
-      dirBrowserCurrent.textContent = data.path;
+      _currentBrowsePath = dirData.path;
+      dirBrowserUp.disabled = dirData.path === dirData.parent;
+      dirBrowserUp.dataset.parent = dirData.parent;
+      dirBrowserCurrent.textContent = dirData.path;
       dirBrowserList.textContent = '';
-      if (data.dirs.length === 0) {
+      if (dirData.dirs.length === 0) {
         const li = document.createElement('li');
         li.className = 'empty';
         li.textContent = 'No subdirectories';
         dirBrowserList.appendChild(li);
       } else {
-        for (const name of data.dirs) {
+        for (const name of dirData.dirs) {
           const li = document.createElement('li');
           li.textContent = name;
           li.addEventListener('click', () => {
-            browseDir(data.path + '/' + name);
+            browseDir(dirData.path + '/' + name);
           });
           dirBrowserList.appendChild(li);
         }
@@ -359,7 +335,7 @@ function showToast(message, type = 'info', durationMs = 3000) {
       const vr2 = await fetch('/api/vaults');
       vaults = await vr2.json();
 
-      // Rebuild vault selector options (the change listener is already attached)
+      // Rebuild vault selector options
       vaultSelect.textContent = '';
       for (const v of vaults) {
         const opt = document.createElement('option');
@@ -378,7 +354,14 @@ function showToast(message, type = 'info', durationMs = 3000) {
       }
       vaultSelectorContainer.classList.remove('hidden');
 
-      // Switch to the newly created vault (also updates vaultSelect.value)
+      // Attach change listener if this is the first time we have 2+ vaults
+      if (vaults.length === 2) {
+        vaultSelect.addEventListener('change', () => {
+          switchToVault(vaultSelect.value);
+        });
+      }
+
+      // Switch to the newly created vault
       await switchToVault(result.id);
 
     } catch (err) {
@@ -389,6 +372,44 @@ function showToast(message, type = 'info', durationMs = 3000) {
       modalCreate.textContent = 'Create Vault';
     }
   });
+
+  // -------------------------------------------------------------------------
+  // Build initial graph
+  // -------------------------------------------------------------------------
+  if (activeVaultId) {
+    data = await GraphBuilder.build(activeVaultId);
+  }
+
+  // NFR-REL-001 — empty wiki or no vaults
+  if (!data.nodeList.length) {
+    document.getElementById('panels').classList.add('hidden');
+    const emptyMsg = document.getElementById('empty-message');
+    if (vaults.length === 0) {
+      emptyMsg.innerHTML =
+        '<div class="welcome-content">' +
+        '<h2>Welcome to Knowledge Compiler</h2>' +
+        '<p>No vaults registered yet. Click the <strong>+</strong> button in the toolbar to create your first vault.</p>' +
+        '<p class="welcome-hint">A vault is a directory where your Markdown knowledge base lives.</p>' +
+        '</div>';
+    } else {
+      emptyMsg.textContent =
+        'No wiki files found in this vault. Add Markdown files to the wiki/ directory to get started.';
+    }
+    emptyMsg.classList.remove('hidden');
+  } else {
+    // --- Initialize modules ---
+    ContentRenderer.init(data.nodes, navigateTo, activeVaultId);
+    Visualization.init(data, navigateTo);
+    Navigation.init(data.nodes, navigateTo);
+    Search.init(data.nodeList, navigateTo, (hiddenTypes) => {
+      Visualization.applyFilter(hiddenTypes);
+    });
+
+    // --- Default selection — TASK-022  FR-GV-006 ---
+    const defaultNode = data.nodes.has('index.md') ? 'index.md' : data.nodeList[0].id;
+    navigateTo(defaultNode, false, true);  // skipCentre — fitToView handles framing
+    Visualization.fitToView();
+  }
 
   // --- Refresh — TASK-058, TASK-059, TASK-060  FR-RF-001..003 ---
   const btnRefresh = document.getElementById('btn-refresh');
