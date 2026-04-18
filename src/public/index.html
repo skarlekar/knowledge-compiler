@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Knowledge Compiler</title>
-  <link rel="stylesheet" href="css/styles.css?v=4">
+  <link rel="stylesheet" href="css/styles.css?v=5">
 </head>
 <body>
 
@@ -29,16 +29,21 @@
     </div>
     <div class="toolbar-right">
       <!-- TASK-058  FR-RF-001 — Refresh -->
-      <button id="btn-refresh" class="toolbar-btn" title="Refresh graph">&#10227; Refresh</button>
+      <button id="btn-refresh" class="toolbar-btn" title="Refresh graph">&#8635; Refresh</button>
       <!-- TASK-061  FR-UP-001 — Upload -->
-      <button id="btn-upload" class="toolbar-btn" title="Upload file to raw/">&#11014; Upload</button>
+      <button id="btn-upload" class="toolbar-btn" title="Upload file to raw/">&#8593; Upload</button>
       <input type="file" id="upload-input" class="hidden" multiple />
+      <!-- TASK-EI006  Export vault -->
+      <button id="btn-export" class="toolbar-btn" title="Export vault as .kc.zip">&#8595; Export</button>
+      <!-- TASK-EI006  Import vault -->
+      <button id="btn-import" class="toolbar-btn" title="Import vault from .kc.zip">&#8613; Import</button>
+      <input type="file" id="import-input" class="hidden" accept=".zip,.kc.zip" />
       <!-- TASK-042  FR-NAV-005 -->
       <button id="btn-back" class="toolbar-btn" title="Back" disabled>&#8592; Back</button>
       <!-- TASK-043  FR-NAV-006 -->
       <button id="btn-home" class="toolbar-btn" title="Home">&#8962; Home</button>
       <!-- TASK-028  FR-GV-012 -->
-      <button id="btn-fit" class="toolbar-btn" title="Fit to view">&#11036; Fit</button>
+      <button id="btn-fit" class="toolbar-btn" title="Fit to view">&#9723; Fit</button>
     </div>
   </header>
 
@@ -143,6 +148,63 @@
     </div>
   </div>
 
+  <!-- TASK-EI007  Import Vault Modal -->
+  <div id="import-modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+    <div class="modal" id="import-modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="import-modal-title">Import Vault</h2>
+        <button id="import-modal-close" class="modal-close" title="Close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Archive File <span class="form-required">*</span></label>
+          <div id="import-file-info" class="import-file-info">No file selected</div>
+        </div>
+        <div class="form-group">
+          <label for="import-vault-name">Vault Name <span class="form-optional">(override)</span></label>
+          <input type="text" id="import-vault-name" placeholder="Leave blank to use name from archive" autocomplete="off" />
+          <span class="form-hint">If empty, the original vault name from the archive will be used.</span>
+        </div>
+        <div class="form-group">
+          <label for="import-vault-path">Target Path <span class="form-required">*</span></label>
+          <div class="path-input-row">
+            <input type="text" id="import-vault-path" placeholder="/Users/you/Documents/my-vault" autocomplete="off" />
+            <button type="button" id="btn-import-browse-path" class="modal-btn modal-btn-secondary btn-browse" title="Browse directories">Browse&hellip;</button>
+          </div>
+          <span class="form-hint">Where to place the imported vault on disk.</span>
+          <!-- Inline directory browser -->
+          <div id="import-dir-browser" class="dir-browser hidden">
+            <div class="dir-browser-nav">
+              <button type="button" id="import-dir-browser-up" class="dir-nav-btn" title="Go up">&#8593; Up</button>
+              <span id="import-dir-browser-current" class="dir-browser-current"></span>
+            </div>
+            <ul id="import-dir-browser-list" class="dir-browser-list"></ul>
+            <div class="dir-browser-footer">
+              <button type="button" id="import-dir-browser-select" class="modal-btn modal-btn-primary">Select This Folder</button>
+              <button type="button" id="import-dir-browser-cancel" class="modal-btn modal-btn-secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="import-vault-purpose">Purpose <span class="form-optional">(override)</span></label>
+          <textarea id="import-vault-purpose" rows="2" placeholder="Leave blank to use purpose from archive"></textarea>
+        </div>
+        <!-- Progress indicator -->
+        <div id="import-progress" class="import-progress hidden">
+          <div class="import-progress-bar">
+            <div id="import-progress-fill" class="import-progress-fill"></div>
+          </div>
+          <span id="import-progress-text" class="import-progress-text">Importing...</span>
+        </div>
+        <div id="import-error" class="form-error hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="import-modal-cancel" class="modal-btn modal-btn-secondary">Cancel</button>
+        <button id="import-modal-import" class="modal-btn modal-btn-primary" disabled>Import Vault</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Vendor libs (bundled locally — NFR-PORT-003, NFR-MAINT-001) -->
   <script src="lib/d3.v7.min.js"></script>
   <script src="lib/marked.min.js"></script>
@@ -151,12 +213,12 @@
   <script src="lib/mermaid.min.js"></script>
 
   <!-- Application modules -->
-  <script src="js/utils.js?v=4"></script>
-  <script src="js/graph.js?v=4"></script>
-  <script src="js/visualization.js?v=4"></script>
-  <script src="js/content.js?v=4"></script>
-  <script src="js/navigation.js?v=4"></script>
-  <script src="js/search.js?v=4"></script>
-  <script src="js/app.js?v=4"></script>
+  <script src="js/utils.js?v=5"></script>
+  <script src="js/graph.js?v=5"></script>
+  <script src="js/visualization.js?v=5"></script>
+  <script src="js/content.js?v=5"></script>
+  <script src="js/navigation.js?v=5"></script>
+  <script src="js/search.js?v=5"></script>
+  <script src="js/app.js?v=5"></script>
 </body>
 </html>

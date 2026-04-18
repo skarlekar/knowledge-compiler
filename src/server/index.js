@@ -1,9 +1,13 @@
 import express from 'express';
-import { readdir, readFile, stat, access, writeFile, mkdir } from 'fs/promises';
+import { readdir, readFile, stat, access, writeFile, mkdir, unlink, chmod, open as fsOpen } from 'fs/promises';
+import { createWriteStream } from 'fs';
 import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import archiver from 'archiver';
+import yauzl from 'yauzl';
+import { marked } from 'marked';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -695,6 +699,309 @@ app.post('/api/vaults', async (req, res) => {
   }
 });
 
+// --- API: Export vault as ZIP archive ---
+// TASK-EI002, TASK-EI003
+
+const EXPORT_EXCLUDE_DIRS = new Set(['.obsidian', 'node_modules', '.git']);
+
+function shouldExcludeFromExport(relativePath, entryName) {
+  if (relativePath === '.claude/settings.local.json') return true;
+  if (entryName === '.DS_Store') return true;
+  const segments = relativePath.split('/');
+  return segments.some(seg => EXPORT_EXCLUDE_DIRS.has(seg));
+}
+
+async function addDirectoryToArchive(archive, dirPath, archivePath) {
+  const entries = await readdir(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name);
+    const relativePath = archivePath ? `${archivePath}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      if (EXPORT_EXCLUDE_DIRS.has(entry.name)) continue;
+      await addDirectoryToArchive(archive, fullPath, relativePath);
+    } else {
+      if (shouldExcludeFromExport(relativePath, entry.name)) continue;
+      archive.file(fullPath, { name: relativePath });
+    }
+  }
+}
+
+app.get('/api/vault/export', async (req, res) => {
+  try {
+    const vaultId = req.query.vault;
+    if (!vaultId) {
+      return res.status(400).json({ error: 'Missing "vault" query parameter.' });
+    }
+
+    const registry = await loadVaultRegistry();
+    const vaultEntry = registry.find(v => v.id === vaultId);
+    if (!vaultEntry) {
+      return res.status(404).json({ error: `Unknown vault: ${vaultId}` });
+    }
+
+    const vaultRoot = vaultEntry.path;
+    try {
+      await access(vaultRoot);
+    } catch {
+      return res.status(404).json({ error: `Vault path not accessible: ${vaultRoot}` });
+    }
+
+    const manifest = {
+      version: 1,
+      name: vaultEntry.name,
+      template: vaultEntry.template,
+      purpose: vaultEntry.purpose || '',
+      exportDate: new Date().toISOString(),
+      exportedFrom: 'knowledge-compiler'
+    };
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `${vaultId}_${dateStr}.kc.zip`;
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    const archive = archiver('zip', { zlib: { level: 6 } });
+
+    archive.on('error', (err) => {
+      console.error('[EXPORT] Archive error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Archive creation failed.' });
+      }
+    });
+
+    archive.pipe(res);
+    archive.append(JSON.stringify(manifest, null, 2), { name: 'vault-manifest.json' });
+    await addDirectoryToArchive(archive, vaultRoot, '');
+    await archive.finalize();
+  } catch (err) {
+    console.error('[EXPORT] Error:', err);
+    if (!res.headersSent) {
+      res.status(err.status || 500).json({ error: err.message });
+    }
+  }
+});
+
+// --- API: Import vault from ZIP archive ---
+// TASK-EI004, TASK-EI005
+
+async function validateZipMagicBytes(filePath) {
+  const fh = await fsOpen(filePath, 'r');
+  try {
+    const buf = Buffer.alloc(4);
+    await fh.read(buf, 0, 4, 0);
+    return buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04;
+  } finally {
+    await fh.close();
+  }
+}
+
+function readManifestFromZip(zipPath) {
+  return new Promise((resolve, reject) => {
+    yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
+      if (err) return reject(err);
+      let found = false;
+      zipfile.readEntry();
+      zipfile.on('entry', (entry) => {
+        if (entry.fileName === 'vault-manifest.json') {
+          found = true;
+          zipfile.openReadStream(entry, (err2, readStream) => {
+            if (err2) { zipfile.close(); return reject(err2); }
+            const chunks = [];
+            readStream.on('data', (chunk) => chunks.push(chunk));
+            readStream.on('end', () => {
+              zipfile.close();
+              try {
+                resolve(JSON.parse(Buffer.concat(chunks).toString('utf-8')));
+              } catch (parseErr) {
+                reject(new Error('Invalid vault-manifest.json: ' + parseErr.message));
+              }
+            });
+          });
+        } else {
+          zipfile.readEntry();
+        }
+      });
+      zipfile.on('end', () => {
+        if (!found) {
+          zipfile.close();
+          reject(new Error('Archive does not contain vault-manifest.json. Not a valid vault export.'));
+        }
+      });
+      zipfile.on('error', (e) => { zipfile.close(); reject(e); });
+    });
+  });
+}
+
+function extractZipToDirectory(zipPath, targetDir) {
+  return new Promise((resolve, reject) => {
+    yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
+      if (err) return reject(err);
+      let extractedCount = 0;
+      zipfile.readEntry();
+
+      zipfile.on('entry', (entry) => {
+        if (entry.fileName === 'vault-manifest.json') { zipfile.readEntry(); return; }
+
+        const resolvedPath = path.resolve(targetDir, entry.fileName);
+        // Zip-slip prevention
+        if (!resolvedPath.startsWith(targetDir + path.sep) && resolvedPath !== targetDir) {
+          console.warn(`[IMPORT] Skipping zip-slip attempt: ${entry.fileName}`);
+          zipfile.readEntry();
+          return;
+        }
+        // Skip OS metadata and editor state
+        const baseName = path.basename(entry.fileName);
+        if (baseName === '.DS_Store' || entry.fileName.split('/').some(seg => seg === '.obsidian')) {
+          zipfile.readEntry();
+          return;
+        }
+
+        // Directory entry
+        if (/\/$/.test(entry.fileName)) {
+          mkdir(resolvedPath, { recursive: true })
+            .then(() => zipfile.readEntry())
+            .catch(() => zipfile.readEntry());
+          return;
+        }
+
+        // File entry
+        mkdir(path.dirname(resolvedPath), { recursive: true })
+          .then(() => {
+            zipfile.openReadStream(entry, (err2, readStream) => {
+              if (err2) { console.warn(`[IMPORT] Read error ${entry.fileName}:`, err2.message); zipfile.readEntry(); return; }
+              const ws = createWriteStream(resolvedPath);
+              readStream.pipe(ws);
+              ws.on('finish', () => { extractedCount++; zipfile.readEntry(); });
+              ws.on('error', (we) => { console.warn(`[IMPORT] Write error ${entry.fileName}:`, we.message); zipfile.readEntry(); });
+            });
+          })
+          .catch(() => zipfile.readEntry());
+      });
+
+      zipfile.on('end', () => { zipfile.close(); resolve(extractedCount); });
+      zipfile.on('error', (e) => { zipfile.close(); reject(e); });
+    });
+  });
+}
+
+function generateDefaultSettings(template) {
+  const baseSkills = ['Skill(journal)', 'Skill(lint)', 'Skill(help)'];
+  const templateSkills = {
+    research: ['Skill(research)', 'Skill(newsletter)'],
+    'code-analysis': [],
+    portfolio: ['Skill(rebalance)']
+  };
+  return { permissions: { allow: [...baseSkills, ...(templateSkills[template] || [])] } };
+}
+
+const importUpload = multer({
+  dest: os.tmpdir(),
+  limits: { fileSize: 100 * 1024 * 1024 }   // 100 MB
+});
+
+app.post('/api/vault/import', importUpload.single('archive'), async (req, res) => {
+  const tempFile = req.file?.path;
+  try {
+    // Catch multer size-limit error
+    if (req.fileValidationError) {
+      return res.status(413).json({ error: 'File exceeds the 100 MB upload limit.' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No archive file provided.' });
+    }
+
+    const targetPath = req.body.targetPath;
+    if (!targetPath || typeof targetPath !== 'string' || !targetPath.trim()) {
+      return res.status(400).json({ error: 'Target path is required.' });
+    }
+    const resolvedTarget = path.resolve(targetPath.trim());
+
+    // Validate ZIP format
+    const isZip = await validateZipMagicBytes(tempFile);
+    if (!isZip) {
+      return res.status(400).json({ error: 'The uploaded file is not a valid ZIP archive.' });
+    }
+
+    // Read and validate manifest
+    let manifest;
+    try {
+      manifest = await readManifestFromZip(tempFile);
+    } catch (manifestErr) {
+      return res.status(400).json({ error: manifestErr.message });
+    }
+    if (!manifest.version || !manifest.name || !manifest.template) {
+      return res.status(400).json({ error: 'Invalid vault manifest: missing required fields (version, name, template).' });
+    }
+
+    // Determine vault name/purpose
+    const vaultName = (req.body.name && req.body.name.trim()) || manifest.name;
+    const vaultPurpose = (req.body.purpose && req.body.purpose.trim()) || manifest.purpose || '';
+
+    // Derive vault ID
+    const vaultId = vaultName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    if (!vaultId) {
+      return res.status(400).json({ error: 'Could not derive a valid vault ID from the vault name.' });
+    }
+
+    // Check for duplicate ID
+    const registry = await loadVaultRegistry();
+    if (registry.find(v => v.id === vaultId)) {
+      return res.status(409).json({ error: `Vault ID "${vaultId}" already exists. Use the Name field to specify a different vault name.` });
+    }
+
+    // Check target path for existing vault
+    try {
+      await access(path.join(resolvedTarget, 'CLAUDE.md'));
+      return res.status(409).json({ error: 'A vault already exists at that path (CLAUDE.md found).' });
+    } catch {
+      // Expected — no existing vault
+    }
+
+    // Extract archive
+    await mkdir(resolvedTarget, { recursive: true });
+    const extractedCount = await extractZipToDirectory(tempFile, resolvedTarget);
+
+    // Fix reset-wiki.sh permissions
+    const resetScript = path.join(resolvedTarget, 'reset-wiki.sh');
+    try {
+      await access(resetScript);
+      await chmod(resetScript, 0o755);
+    } catch { /* not present — fine */ }
+
+    // Generate fresh settings.local.json
+    const settingsDir = path.join(resolvedTarget, '.claude');
+    await mkdir(settingsDir, { recursive: true });
+    await writeFile(
+      path.join(settingsDir, 'settings.local.json'),
+      JSON.stringify(generateDefaultSettings(manifest.template), null, 2)
+    );
+
+    // Register in vaults.json
+    const newEntry = { id: vaultId, name: vaultName, template: manifest.template, path: resolvedTarget };
+    if (vaultPurpose) newEntry.purpose = vaultPurpose;
+    const updatedRegistry = [...registry, newEntry];
+    await writeFile(VAULTS_JSON_PATH, JSON.stringify(updatedRegistry, null, 2));
+    _vaultRegistry = null;
+
+    console.log(`[IMPORT] Imported vault "${vaultId}" (${extractedCount} files) to ${resolvedTarget}`);
+    res.json({ id: vaultId, name: vaultName, template: manifest.template, purpose: vaultPurpose });
+  } catch (err) {
+    console.error('[IMPORT] Error:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (tempFile) { try { await unlink(tempFile); } catch { /* ignore */ } }
+  }
+});
+
+// Multer error handler for file size limit
+app.use((err, _req, res, next) => {
+  if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'File exceeds the 100 MB upload limit.' });
+  }
+  next(err);
+});
+
 // --- API: List all .md files recursively ---
 // TASK-005  FR-GC-001
 async function discoverFiles(dir, base) {
@@ -752,6 +1059,210 @@ app.get('/api/wiki/file', async (req, res) => {
     // NFR-REL-003
     console.error(`File read error [${relPath}]:`, err.message);
     res.status(404).json({ error: `Unable to load file: ${relPath}. ${err.message}` });
+  }
+});
+
+// --- Page content export helpers (TASK-PE002) ---
+
+/**
+ * Strip YAML frontmatter from raw markdown.
+ * Returns { title, body } where title is extracted from frontmatter or null.
+ */
+function stripFrontmatter(raw) {
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+  if (!match) return { title: null, body: raw };
+  const fm = match[1];
+  const body = match[2];
+  // Extract title from frontmatter without a YAML parser — just grab the title line
+  const titleMatch = fm.match(/^title:\s*["']?(.+?)["']?\s*$/m);
+  const title = titleMatch ? titleMatch[1] : null;
+  return { title, body };
+}
+
+/**
+ * Resolve internal wiki links to plain text in markdown source.
+ * Internal = href ends with .md (after stripping optional "title").
+ * External (http/https) and anchor (#) links are preserved.
+ */
+function resolveLinksForExport(markdown) {
+  // 1. Extract fenced code blocks to protect them from regex
+  const codeBlocks = [];
+  let processed = markdown.replace(/^(```[\s\S]*?^```|~~~[\s\S]*?^~~~)/gm, (m) => {
+    codeBlocks.push(m);
+    return `\x00CODEBLOCK${codeBlocks.length - 1}\x00`;
+  });
+
+  // 2. Extract inline code spans
+  const inlineCode = [];
+  processed = processed.replace(/`[^`]+`/g, (m) => {
+    inlineCode.push(m);
+    return `\x00INLINE${inlineCode.length - 1}\x00`;
+  });
+
+  // 3. Handle reference-style link definitions: [ref-id]: target "title"
+  const refDefs = {};
+  processed = processed.replace(/^\[([^\]]+)\]:\s+(\S+)(?:\s+"[^"]*")?\s*$/gm, (m, id, target) => {
+    const cleanTarget = target.replace(/\s+"[^"]*"$/, '');
+    refDefs[id.toLowerCase()] = cleanTarget;
+    // Check if internal — if so, mark definition for removal
+    if (!cleanTarget.startsWith('http://') && !cleanTarget.startsWith('https://') && !cleanTarget.startsWith('#') && cleanTarget.endsWith('.md')) {
+      return ''; // remove definition line
+    }
+    return m; // keep external definitions
+  });
+
+  // 4. Handle reference-style link usages: [text][ref-id]
+  processed = processed.replace(/\[([^\]]*)\]\[([^\]]+)\]/g, (m, text, refId) => {
+    const target = refDefs[refId.toLowerCase()];
+    if (!target) return m; // unknown ref, keep as-is
+    if (target.startsWith('http://') || target.startsWith('https://') || target.startsWith('#')) return m;
+    if (target.endsWith('.md')) return text || '';
+    return m;
+  });
+
+  // 5. Handle inline links: [text](target "optional title")
+  processed = processed.replace(/\[([^\]]*)\]\(([^)]+)\)/g, (m, text, rawTarget) => {
+    // Strip optional title: page.md "tooltip" → page.md
+    const target = rawTarget.replace(/\s+"[^"]*"$/, '').trim();
+    if (target.startsWith('http://') || target.startsWith('https://') || target.startsWith('#')) return m;
+    if (target.endsWith('.md')) return text || '';
+    return m;
+  });
+
+  // 6. Reinsert inline code and code blocks
+  processed = processed.replace(/\x00INLINE(\d+)\x00/g, (_, i) => inlineCode[i]);
+  processed = processed.replace(/\x00CODEBLOCK(\d+)\x00/g, (_, i) => codeBlocks[i]);
+
+  return processed;
+}
+
+/**
+ * Safety pass on HTML: strip internal <a> tags to their text content,
+ * add target/rel to external links.
+ */
+function resolveHtmlLinksForExport(html) {
+  // Process <a> tags — handles nested HTML inside the link
+  return html.replace(/<a\s+([^>]*?)>([\s\S]*?)<\/a>/gi, (m, attrs, inner) => {
+    const hrefMatch = attrs.match(/href=["']([^"']+)["']/);
+    if (!hrefMatch) return m;
+    const href = hrefMatch[1];
+
+    if (href.startsWith('http://') || href.startsWith('https://')) {
+      // External: add target and rel
+      let newAttrs = attrs;
+      if (!attrs.includes('target=')) newAttrs += ' target="_blank"';
+      if (!attrs.includes('rel=')) newAttrs += ' rel="noopener noreferrer"';
+      return `<a ${newAttrs}>${inner}</a>`;
+    }
+    if (href.startsWith('#')) return m; // anchor — keep
+    if (href.endsWith('.md') || href.match(/\.md[?"#]/)) {
+      // Internal link — replace with inner content only
+      return inner || '';
+    }
+    return m;
+  });
+}
+
+/**
+ * Build an export filename from the page title or wiki path.
+ */
+function buildExportFilename(title, wikiPath, format) {
+  let slug;
+  if (title) {
+    slug = title.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  } else {
+    slug = path.basename(wikiPath, '.md');
+  }
+  return `${slug}.${format === 'html' ? 'html' : 'md'}`;
+}
+
+/**
+ * Wrap HTML body in a minimal standalone HTML document.
+ */
+function wrapInHtmlDocument(htmlBody, title) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title || 'Exported Page'}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #fff; }
+    main { max-width: 800px; margin: 0 auto; padding: 24px 32px; }
+    h1 { font-size: 2em; margin-top: 0.5em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; margin-top: 1.5em; }
+    h3 { font-size: 1.25em; margin-top: 1.3em; }
+    a { color: #4A90D9; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    blockquote { border-left: 4px solid #4A90D9; margin: 1em 0; padding: 0.5em 1em; background: #f0f5ff; }
+    table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+    th { background: #f5f5f5; font-weight: 600; }
+    tr:nth-child(even) { background: #fafafa; }
+    pre { background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; overflow-x: auto; }
+    code { font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 0.9em; }
+    p code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; }
+    hr { border: none; border-top: 1px solid #eee; margin: 2em 0; }
+    img { max-width: 100%; }
+  </style>
+</head>
+<body>
+  <!-- Images use relative paths from the wiki. Upload them separately to your publishing platform. -->
+  <main>
+${htmlBody}
+  </main>
+</body>
+</html>`;
+}
+
+// --- API: Export a single wiki page as Markdown or HTML (TASK-PE003) ---
+app.get('/api/wiki/page/export', async (req, res) => {
+  const relPath = req.query.path;
+  const format = req.query.format;
+
+  if (!relPath) {
+    return res.status(400).json({ error: 'Missing "path" query parameter.' });
+  }
+  if (!format || (format !== 'md' && format !== 'html')) {
+    return res.status(400).json({ error: 'Format must be "md" or "html".' });
+  }
+
+  try {
+    const vaultRoot = await resolveVaultRoot(req.query.vault);
+    const wikiDir = path.join(vaultRoot, 'wiki');
+
+    // Path-traversal prevention
+    const resolved = path.resolve(wikiDir, relPath);
+    if (!resolved.startsWith(wikiDir + path.sep) && resolved !== wikiDir) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
+    const raw = await readFile(resolved, 'utf-8');
+    const { title, body } = stripFrontmatter(raw);
+    const resolvedBody = resolveLinksForExport(body);
+    const filename = buildExportFilename(title, relPath, format);
+
+    if (format === 'md') {
+      res.set('Content-Type', 'text/markdown; charset=utf-8');
+      res.set('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(resolvedBody);
+    }
+
+    // HTML format
+    let html = marked.parse(resolvedBody, { gfm: true, breaks: false });
+    html = resolveHtmlLinksForExport(html);
+    const doc = wrapInHtmlDocument(html, title);
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    res.set('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(doc);
+  } catch (err) {
+    if (err.status === 404) return res.status(404).json({ error: err.message });
+    if (err.code === 'ENOENT') return res.status(404).json({ error: `File not found: ${relPath}` });
+    console.error(`Page export error [${relPath}]:`, err.message);
+    res.status(500).json({ error: `Export failed: ${err.message}` });
   }
 });
 

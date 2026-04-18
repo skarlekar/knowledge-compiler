@@ -247,6 +247,8 @@ graph TD
         API4["GET /api/wiki/files · /api/wiki/file\ndiscover & read wiki pages"]
         API5["GET /api/wiki/image\nserve images from wiki/images/"]
         API6["POST /api/raw/upload\nupload files to vault/raw/"]
+        API7["GET /api/vault/export · POST /api/vault/import\nvault archive — download & upload .kc.zip"]
+        API8["GET /api/wiki/page/export\npage content export — Markdown or HTML"]
     end
 
     subgraph Vault["Vault — machine-local, not in git"]
@@ -522,6 +524,9 @@ Which classes depend on the database layer?
 | **Fit to view** | Graph auto-fits to the browser on load and vault switch; manual "Fit" button also available |
 | **Refresh** | Rebuilds the graph from `wiki/` without a full page reload; preserves the active node |
 | **Upload to `raw/`** | Upload source files directly from the browser to the active vault's `raw/` directory |
+| **Vault export** | Download the active vault as a `.kc.zip` archive (includes wiki, raw, skills, schema, and a generated manifest) |
+| **Vault import** | Upload a `.kc.zip` archive, pick a target directory, and register it as a new vault — enables sharing, backup, and transfer between machines |
+| **Page content export** | Export the currently viewed page as Markdown or HTML via a dropdown in the metadata bar; internal wiki links are resolved to plain text while external links are preserved as hyperlinks — designed for publishing newsletters to platforms like Substack, Ghost, and Medium |
 | **Resizable panels** | Drag the divider between the graph and content panels |
 
 ### Keyboard Shortcuts
@@ -543,8 +548,11 @@ Which classes depend on the database layer?
 | `POST` | `/api/vaults` | Create a new vault: directory structure, CLAUDE.md, skills, reset script, index, log |
 | `GET` | `/api/vault-templates` | List available template names |
 | `GET` | `/api/fs/ls?path=<dir>` | List subdirectories at a path (defaults to home dir); powers the inline directory browser |
+| `GET` | `/api/vault/export?vault=<id>` | Streams the vault as a `.kc.zip` archive; includes wiki, raw, skills, schema, reset script, and a generated `vault-manifest.json`; excludes machine-specific settings, `.obsidian/`, `.DS_Store` |
+| `POST` | `/api/vault/import` | Accepts `multipart/form-data` with a `.kc.zip` archive and target path; validates ZIP magic bytes and manifest; extracts, registers in `vaults.json`, and returns the new vault entry |
 | `GET` | `/api/wiki/files?vault=<id>` | Returns a JSON array of all `.md` paths under the vault's `wiki/` |
 | `GET` | `/api/wiki/file?vault=<id>&path=<rel>` | Returns the raw content of a wiki file; path-traversal protected |
+| `GET` | `/api/wiki/page/export?vault=<id>&path=<rel>&format=md\|html` | Exports a wiki page with frontmatter stripped and internal `.md` links resolved to plain text; `format=md` returns Markdown, `format=html` returns a standalone HTML document with embedded CSS |
 | `GET` | `/api/wiki/image?vault=<id>&path=<rel>` | Serves an image from `wiki/images/` (SVG, PNG, JPG, GIF, WebP) |
 | `POST` | `/api/raw/upload?vault=<id>` | Accepts `multipart/form-data`; writes file to `raw/`; rejects overwrites |
 
@@ -611,7 +619,9 @@ knowledge-compiler/
 │   ├── specification.md               # Full software requirements (EARS format)
 │   ├── tasks.md                       # Implementation task list
 │   ├── technical-deep-dive.md         # Auto-generated technical deep dive (document-project)
-│   └── doc-gen-instructions.md        # Instructions for the document-project skill
+│   ├── doc-gen-instructions.md        # Instructions for the document-project skill
+│   ├── Page_Content_Export_Plan.md     # Design plan for page content export feature
+│   └── Page_Content_Export_Tasks.md    # Task breakdown for page content export
 │
 └── src/
     ├── package.json
@@ -670,6 +680,9 @@ knowledge-compiler/
 | HTML sanitization | [DOMPurify](https://github.com/cure53/DOMPurify) |
 | YAML / frontmatter | [js-yaml](https://github.com/nodeca/js-yaml) |
 | Server | [Express](https://expressjs.com/) + [multer](https://github.com/expressjs/multer) |
+| ZIP archive creation | [archiver](https://github.com/archiverjs/node-archiver) — streaming vault export |
+| ZIP archive extraction | [yauzl](https://github.com/thejoshwolfe/yauzl) — secure vault import with zip-slip prevention |
+| Server-side Markdown | [marked](https://marked.js.org/) v15 — page content export (HTML format) |
 | PDF text extraction | [pdfminer.six](https://pdfminer-docs.readthedocs.io/) (Stage 1) |
 | PDF page rendering | [pypdfium2](https://pypdfium2.readthedocs.io/) — Google PDFium, no poppler (Stages 2–3) |
 | OCR | [pytesseract](https://github.com/madmaze/pytesseract) + Tesseract engine (Stage 2) |

@@ -210,14 +210,27 @@ function showToast(message, type = 'info', durationMs = 3000) {
     if (e.target === modalOverlay) closeVaultModal();
   });
 
-  // Close on Escape (only if dir browser is not open)
+  // Close on Escape — TASK-EI014: handles both create-vault and import modals
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !modalOverlay.classList.contains('hidden')) {
+    if (e.key !== 'Escape') return;
+    // Check create-vault modal first
+    if (!modalOverlay.classList.contains('hidden')) {
       const dirBrowser = document.getElementById('dir-browser');
       if (!dirBrowser.classList.contains('hidden')) {
         dirBrowser.classList.add('hidden');
       } else {
         closeVaultModal();
+      }
+      return;
+    }
+    // Check import modal
+    const importOverlay = document.getElementById('import-modal-overlay');
+    if (importOverlay && !importOverlay.classList.contains('hidden')) {
+      const impDirBrowser = document.getElementById('import-dir-browser');
+      if (impDirBrowser && !impDirBrowser.classList.contains('hidden')) {
+        impDirBrowser.classList.add('hidden');
+      } else {
+        closeImportModal();
       }
     }
   });
@@ -504,6 +517,253 @@ function showToast(message, type = 'info', durationMs = 3000) {
 
     // Reset input so the same file can be re-selected
     uploadInput.value = '';
+  });
+
+  // --- Export Vault — TASK-EI010 ---
+  const btnExport = document.getElementById('btn-export');
+
+  btnExport.addEventListener('click', async () => {
+    if (!activeVaultId) {
+      showToast('No vault selected to export.', 'error');
+      return;
+    }
+    const vaultName = vaults.find(v => v.id === activeVaultId)?.name || activeVaultId;
+    showToast(`Preparing export of ${vaultName}...`, 'info', 3000);
+    btnExport.disabled = true;
+    const origHTML = btnExport.innerHTML;
+    btnExport.innerHTML = '&#11015; Exporting\u2026';
+    try {
+      const response = await fetch(`/api/vault/export?vault=${encodeURIComponent(activeVaultId)}`);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Export failed' }));
+        throw new Error(err.error || `Export failed with status ${response.status}`);
+      }
+      const disposition = response.headers.get('Content-Disposition');
+      let filename = `${activeVaultId}_export.kc.zip`;
+      if (disposition) {
+        const match = disposition.match(/filename="?([^";\s]+)"?/);
+        if (match) filename = match[1];
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`Exported ${vaultName} successfully.`, 'success');
+    } catch (err) {
+      console.error('Export failed:', err);
+      showToast('Export failed: ' + err.message, 'error', 5000);
+    } finally {
+      btnExport.innerHTML = origHTML;
+      btnExport.disabled = false;
+    }
+  });
+
+  // --- Import Vault — TASK-EI011, TASK-EI012, TASK-EI013, TASK-EI014 ---
+  const btnImport = document.getElementById('btn-import');
+  const importInput = document.getElementById('import-input');
+  const importModalOverlay = document.getElementById('import-modal-overlay');
+  const importModalClose = document.getElementById('import-modal-close');
+  const importModalCancel = document.getElementById('import-modal-cancel');
+  const importModalImport = document.getElementById('import-modal-import');
+  const importError = document.getElementById('import-error');
+  const importFileInfo = document.getElementById('import-file-info');
+  const importVaultName = document.getElementById('import-vault-name');
+  const importVaultPath = document.getElementById('import-vault-path');
+  const importVaultPurpose = document.getElementById('import-vault-purpose');
+  const importProgress = document.getElementById('import-progress');
+  const importProgressFill = document.getElementById('import-progress-fill');
+  const importProgressText = document.getElementById('import-progress-text');
+
+  let _importFile = null;
+
+  function openImportModal() {
+    _importFile = null;
+    importFileInfo.textContent = 'No file selected';
+    importFileInfo.classList.remove('has-file');
+    importVaultName.value = '';
+    importVaultPath.value = '';
+    importVaultPurpose.value = '';
+    importError.classList.add('hidden');
+    importError.textContent = '';
+    importProgress.classList.add('hidden');
+    importProgressFill.classList.remove('indeterminate');
+    importModalImport.disabled = true;
+    importModalImport.textContent = 'Import Vault';
+    importModalOverlay.classList.remove('hidden');
+  }
+
+  function closeImportModal() {
+    importModalOverlay.classList.add('hidden');
+    _importFile = null;
+  }
+
+  btnImport.addEventListener('click', () => { importInput.click(); });
+
+  importInput.addEventListener('change', () => {
+    const files = importInput.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    importInput.value = '';
+    openImportModal();
+    _importFile = file;
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    importFileInfo.textContent = `${file.name} (${sizeMB} MB)`;
+    importFileInfo.classList.add('has-file');
+    importModalImport.disabled = false;
+  });
+
+  importModalClose.addEventListener('click', closeImportModal);
+  importModalCancel.addEventListener('click', closeImportModal);
+  importModalOverlay.addEventListener('click', (e) => {
+    if (e.target === importModalOverlay) closeImportModal();
+  });
+
+  // --- Import directory browser (TASK-EI012) ---
+  const btnImportBrowsePath = document.getElementById('btn-import-browse-path');
+  const importDirBrowser = document.getElementById('import-dir-browser');
+  const importDirBrowserCurrent = document.getElementById('import-dir-browser-current');
+  const importDirBrowserList = document.getElementById('import-dir-browser-list');
+  const importDirBrowserUp = document.getElementById('import-dir-browser-up');
+  const importDirBrowserSelect = document.getElementById('import-dir-browser-select');
+  const importDirBrowserCancel = document.getElementById('import-dir-browser-cancel');
+
+  let _importCurrentBrowsePath = '';
+
+  async function importBrowseDir(browsePath) {
+    try {
+      const r = await fetch(`/api/fs/ls?path=${encodeURIComponent(browsePath)}`);
+      const dirData = await r.json();
+      if (!r.ok) {
+        importDirBrowserCurrent.textContent = 'Error: ' + (dirData.error || 'Could not read directory');
+        importDirBrowserList.textContent = '';
+        return;
+      }
+      _importCurrentBrowsePath = dirData.path;
+      importDirBrowserUp.disabled = dirData.path === dirData.parent;
+      importDirBrowserUp.dataset.parent = dirData.parent;
+      importDirBrowserCurrent.textContent = dirData.path;
+      importDirBrowserList.textContent = '';
+      if (dirData.dirs.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'empty';
+        li.textContent = 'No subdirectories';
+        importDirBrowserList.appendChild(li);
+      } else {
+        for (const name of dirData.dirs) {
+          const li = document.createElement('li');
+          li.textContent = name;
+          li.addEventListener('click', () => importBrowseDir(dirData.path + '/' + name));
+          importDirBrowserList.appendChild(li);
+        }
+      }
+    } catch (err) {
+      importDirBrowserCurrent.textContent = 'Error: ' + err.message;
+    }
+  }
+
+  btnImportBrowsePath.addEventListener('click', async () => {
+    const existing = importVaultPath.value.trim();
+    importDirBrowser.classList.remove('hidden');
+    await importBrowseDir(existing || '');
+  });
+
+  importDirBrowserUp.addEventListener('click', () => {
+    const parent = importDirBrowserUp.dataset.parent;
+    if (parent) importBrowseDir(parent);
+  });
+
+  importDirBrowserSelect.addEventListener('click', () => {
+    importVaultPath.value = _importCurrentBrowsePath;
+    importDirBrowser.classList.add('hidden');
+  });
+
+  importDirBrowserCancel.addEventListener('click', () => {
+    importDirBrowser.classList.add('hidden');
+  });
+
+  // --- Import submit handler (TASK-EI013) ---
+  importModalImport.addEventListener('click', async () => {
+    if (!_importFile) {
+      importError.textContent = 'No archive file selected.';
+      importError.classList.remove('hidden');
+      return;
+    }
+    const targetPath = importVaultPath.value.trim();
+    if (!targetPath) {
+      importError.textContent = 'Target path is required.';
+      importError.classList.remove('hidden');
+      importVaultPath.focus();
+      return;
+    }
+    importError.classList.add('hidden');
+    importModalImport.disabled = true;
+    importModalImport.textContent = 'Importing\u2026';
+    importModalCancel.disabled = true;
+    importProgress.classList.remove('hidden');
+    importProgressFill.classList.add('indeterminate');
+    importProgressText.textContent = 'Uploading and extracting archive\u2026';
+
+    try {
+      const formData = new FormData();
+      formData.append('archive', _importFile);
+      formData.append('targetPath', targetPath);
+      const nameOverride = importVaultName.value.trim();
+      if (nameOverride) formData.append('name', nameOverride);
+      const purposeOverride = importVaultPurpose.value.trim();
+      if (purposeOverride) formData.append('purpose', purposeOverride);
+
+      const res = await fetch('/api/vault/import', { method: 'POST', body: formData });
+      const result = await res.json();
+
+      if (!res.ok) {
+        importError.textContent = result.error || 'Import failed.';
+        importError.classList.remove('hidden');
+        return;
+      }
+
+      closeImportModal();
+      showToast(`Vault "${result.name}" imported successfully.`, 'success', 3000);
+
+      // Re-fetch vaults and rebuild selector
+      const vr2 = await fetch('/api/vaults');
+      vaults = await vr2.json();
+
+      vaultSelect.textContent = '';
+      for (const v of vaults) {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = v.name;
+        vaultSelect.appendChild(opt);
+      }
+      if (vaults.length === 1) {
+        vaultSelect.classList.add('hidden');
+        vaultNameEl.classList.remove('hidden');
+      } else {
+        vaultSelect.classList.remove('hidden');
+        vaultNameEl.classList.add('hidden');
+      }
+      vaultSelectorContainer.classList.remove('hidden');
+
+      if (vaults.length === 2) {
+        vaultSelect.addEventListener('change', () => switchToVault(vaultSelect.value));
+      }
+
+      await switchToVault(result.id);
+    } catch (err) {
+      importError.textContent = 'Network error: ' + err.message;
+      importError.classList.remove('hidden');
+    } finally {
+      importModalImport.disabled = false;
+      importModalImport.textContent = 'Import Vault';
+      importModalCancel.disabled = false;
+      importProgress.classList.add('hidden');
+      importProgressFill.classList.remove('indeterminate');
+    }
   });
 
   // --- Resizable divider — TASK-014  NFR-USE-002 ---

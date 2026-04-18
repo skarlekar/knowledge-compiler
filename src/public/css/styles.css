@@ -255,6 +255,48 @@ html, body {
   font-size: 12px;
 }
 
+/* TASK-PE005 — Page export button & dropdown */
+.meta-export {
+  position: relative;
+  margin-left: auto;
+}
+.meta-export-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  color: #333;
+}
+.meta-export-btn:hover { background: #e8e8e8; }
+.meta-export-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 100;
+  min-width: 140px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 4px 0;
+  margin-top: 4px;
+}
+.meta-export-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+}
+.meta-export-option:hover { background: #f0f4ff; }
+.meta-export-dropdown.hidden { display: none; }
+
 /* IR-CP-002 — Scrollable */
 .content-body {
   flex: 1 1 auto;
@@ -788,6 +830,53 @@ html, body {
   padding: 8px 10px;
   border-top: 1px solid #ddd;
   background: #f0f0f0;
+}
+
+/* --- Import file info  TASK-EI009 -------------------------------------- */
+.import-file-info {
+  font-size: 13px;
+  color: #666;
+  padding: 7px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fafafa;
+}
+.import-file-info.has-file {
+  color: #222;
+  background: #f0f8ff;
+  border-color: #4A90D9;
+}
+
+/* --- Import progress bar  TASK-EI009 ----------------------------------- */
+.import-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.import-progress-bar {
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.import-progress-fill {
+  height: 100%;
+  background: #4A90D9;
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.import-progress-fill.indeterminate {
+  width: 30%;
+  animation: progress-slide 1.5s ease-in-out infinite;
+}
+@keyframes progress-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+.import-progress-text {
+  font-size: 12px;
+  color: #666;
 }
 
 /* --- Responsive  NFR-USE-001 ------------------------------------------- */

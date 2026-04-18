@@ -169,7 +169,112 @@ const ContentRenderer = (() => {
       html += `<span class="meta-info">Updated: ${node.updated}</span>`;
     }
 
+    // TASK-PE006 — Page export button
+    html += `<div class="meta-export">
+      <button id="btn-page-export" class="meta-export-btn"
+              title="Export page content" aria-haspopup="true" aria-expanded="false">↓ Export ▾</button>
+      <div id="page-export-dropdown" class="meta-export-dropdown hidden" role="menu">
+        <button class="meta-export-option" data-format="md" role="menuitem">↓ Markdown</button>
+        <button class="meta-export-option" data-format="html" role="menuitem">↓ HTML</button>
+      </div>
+    </div>`;
+
+    // Note: innerHTML is used here with the same pattern as the existing metadata bar
+    // rendering. All user-facing text is escaped via escapeHtml(). The export button
+    // HTML is entirely hardcoded with no user input.
     bar.innerHTML = html;
+
+    // TASK-PE007 — Wire up dropdown interaction and download
+    _initPageExportDropdown();
+  }
+
+  /**
+   * Set up the page-export dropdown toggle, keyboard nav, and download logic.
+   * Called each time renderMetadataBar() rebuilds the bar.
+   * TASK-PE007
+   */
+  function _initPageExportDropdown() {
+    const btn = document.getElementById('btn-page-export');
+    const dropdown = document.getElementById('page-export-dropdown');
+    if (!btn || !dropdown) return;
+
+    let _outsideClickHandler = null;
+    let _escHandler = null;
+
+    function openDropdown() {
+      dropdown.classList.remove('hidden');
+      btn.setAttribute('aria-expanded', 'true');
+      // Focus first option for keyboard accessibility
+      const firstOpt = dropdown.querySelector('.meta-export-option');
+      if (firstOpt) firstOpt.focus();
+      // Close on outside click
+      _outsideClickHandler = (e) => {
+        if (!btn.contains(e.target) && !dropdown.contains(e.target)) closeDropdown();
+      };
+      document.addEventListener('click', _outsideClickHandler, true);
+      // Close on Escape
+      _escHandler = (e) => { if (e.key === 'Escape') { closeDropdown(); e.stopPropagation(); } };
+      document.addEventListener('keydown', _escHandler, true);
+    }
+
+    function closeDropdown() {
+      dropdown.classList.add('hidden');
+      btn.setAttribute('aria-expanded', 'false');
+      if (_outsideClickHandler) { document.removeEventListener('click', _outsideClickHandler, true); _outsideClickHandler = null; }
+      if (_escHandler) { document.removeEventListener('keydown', _escHandler, true); _escHandler = null; }
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.contains('hidden') ? openDropdown() : closeDropdown();
+    });
+
+    // Enter/Space on button
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
+    });
+
+    // Arrow key navigation between options
+    dropdown.addEventListener('keydown', (e) => {
+      const options = [...dropdown.querySelectorAll('.meta-export-option')];
+      const idx = options.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); options[(idx + 1) % options.length].focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); options[(idx - 1 + options.length) % options.length].focus(); }
+    });
+
+    // Format selection — trigger download
+    for (const opt of dropdown.querySelectorAll('.meta-export-option')) {
+      opt.addEventListener('click', async () => {
+        const format = opt.dataset.format;
+        closeDropdown();
+        try {
+          const vaultParam = _activeVaultId ? `&vault=${encodeURIComponent(_activeVaultId)}` : '';
+          const url = `/api/wiki/page/export?path=${encodeURIComponent(_currentRenderNode)}&format=${format}${vaultParam}`;
+          const resp = await fetch(url);
+          if (!resp.ok) {
+            const errData = await resp.json().catch(() => ({ error: resp.statusText }));
+            if (typeof showToast === 'function') showToast(errData.error || 'Export failed', 'error');
+            return;
+          }
+          // Extract filename from Content-Disposition
+          const cd = resp.headers.get('Content-Disposition') || '';
+          const fnMatch = cd.match(/filename="?([^";\n]+)"?/);
+          const filename = fnMatch ? fnMatch[1] : `export.${format}`;
+          // Download via blob
+          const blob = await resp.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(a.href);
+          if (typeof showToast === 'function') showToast(`Exported ${filename}`, 'success');
+        } catch (err) {
+          if (typeof showToast === 'function') showToast('Export failed: ' + err.message, 'error');
+        }
+      });
+    }
   }
 
   /**
