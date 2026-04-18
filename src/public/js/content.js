@@ -148,7 +148,7 @@ const ContentRenderer = (() => {
 
     // Type badge with color
     if (node.type) {
-      const bg = getTypeColour(node.type);
+      const bg = getTypeColor(node.type);
       html += `<span class="meta-badge" style="background:${bg}">${node.type}</span>`;
     }
 

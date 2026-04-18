@@ -39,7 +39,7 @@ const TYPE_COLORS = {
 };
 
 // TASK-055  NFR-USE-004 — Label color for WCAG 4.5:1 contrast
-const TYPE_LABEL_COLOURS = {
+const TYPE_LABEL_COLORS = {
   concept:                '#fff',
   entity:                 '#fff',
   summary:                '#fff',
