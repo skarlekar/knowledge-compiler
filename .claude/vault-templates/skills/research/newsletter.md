@@ -126,6 +126,19 @@ Include at least 3 direct attributed quotes drawn from the original sources.
 Cross-reference related prior newsletters where relevant, using relative Markdown
 links: `[Issue Title](newsletter-slug.md)`.
 
+**Internal wiki link path discipline:** Newsletters live in `wiki/newsletters/`.
+All links to other wiki pages in the newsletter body must use `../` prefix to
+navigate up from the `newsletters/` directory. Correct examples:
+
+- `[Concept Name](../concepts/concept-slug.md)` — NOT `concepts/concept-slug.md`
+- `[Entity Name](../entities/entity-slug.md)` — NOT `entities/entity-slug.md`
+- `[Synthesis Title](../synthesis/synthesis-slug.md)` — NOT `synthesis/synthesis-slug.md`
+- `[Summary Title](../summaries/summary-slug.md)` — NOT `summaries/summary-slug.md`
+
+Links to other newsletters in the same directory use no prefix: `[Title](newsletter-slug.md)`.
+Links to images use: `![alt](../images/slug.svg)`.
+**Every internal wiki link must be checked against this rule before saving.**
+
 **D. Validate word count.**
 After writing, estimate the actual word count. If it falls outside 4,000–5,500
 words, revise before saving — expand thin sections or trim padding.
@@ -212,8 +225,12 @@ Apply the URL map from Step 2C throughout the newsletter.
 
 - **Always link** (on first substantive mention): named people, organizations,
   commercial tools, open-source projects, research papers, gists, articles
-- **Never link**: generic category terms ("vector databases", "graph databases"),
-  adjectives, abstract concepts without a canonical URL
+- **Never link**: generic category terms, technology abbreviations, or abstract
+  concepts without a canonical URL. Examples of terms that must NOT be linked:
+  "vector databases", "graph databases", "LLM", "LLMs", "CRM", "AI", "API",
+  "RAG", "NLP", "ML", "SaaS", "agentic AI", "machine learning", "deep learning",
+  "knowledge graph". Only link a term if it refers to a **specific named product,
+  project, person, or paper** — not to a general technology category
 - **First mention only** — link when the entity first appears in a substantive
   context; do not repeat the link on every subsequent mention
 - **Inline Markdown syntax** — `[Andrej Karpathy](https://x.com/karpathy)`,
