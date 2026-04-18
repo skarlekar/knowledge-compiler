@@ -37,13 +37,22 @@ Vaults are registered in `vaults.json` at the project root and selected via a dr
 ./start.sh
 ```
 
-`start.sh` kills any existing process on port 3000, installs Node dependencies on first run, and starts the server at `http://localhost:3000`. Or manually:
+`start.sh` kills any existing process on port 3000, installs Node dependencies on first run, and starts the server at `http://localhost:3000`. By default, upload and import are **disabled** for safety. To enable them:
+
+```bash
+./start.sh --allow-write
+```
+
+Or manually:
 
 ```bash
 cd src
 npm install   # first run only
-node server/index.js
+node server/index.js              # read-only mode (upload/import disabled)
+node server/index.js --allow-write  # write mode (upload/import enabled)
 ```
+
+You can also use the environment variable: `ALLOW_WRITE=true ./start.sh`.
 
 ### Creating Your First Vault
 
@@ -523,9 +532,9 @@ Which classes depend on the database layer?
 | **Pan / zoom / drag** | Scroll to zoom, drag background to pan, drag nodes to reposition |
 | **Fit to view** | Graph auto-fits to the browser on load and vault switch; manual "Fit" button also available |
 | **Refresh** | Rebuilds the graph from `wiki/` without a full page reload; preserves the active node |
-| **Upload to `raw/`** | Upload source files directly from the browser to the active vault's `raw/` directory |
+| **Upload to `raw/`** | Upload source files directly from the browser to the active vault's `raw/` directory. Disabled by default; requires `--allow-write` |
 | **Vault export** | Download the active vault as a `.kc.zip` archive (includes wiki, raw, skills, schema, and a generated manifest) |
-| **Vault import** | Upload a `.kc.zip` archive, pick a target directory, and register it as a new vault — enables sharing, backup, and transfer between machines |
+| **Vault import** | Upload a `.kc.zip` archive, pick a target directory, and register it as a new vault — enables sharing, backup, and transfer between machines. Disabled by default; requires `--allow-write` |
 | **Page content export** | Export the currently viewed page as Markdown or HTML via a dropdown in the metadata bar; internal wiki links are resolved to plain text while external links are preserved as hyperlinks — designed for publishing newsletters to platforms like Substack, Ghost, and Medium |
 | **Resizable panels** | Drag the divider between the graph and content panels |
 
@@ -544,19 +553,20 @@ Which classes depend on the database layer?
 
 | Method | Endpoint | Description |
 | ------ | -------- | ----------- |
+| `GET` | `/api/config` | Returns server configuration: `{ allowWrite }` — used by the frontend to enable/disable upload and import buttons |
 | `GET` | `/api/vaults` | Return registered vault list (id, name, template, purpose — path is stripped) |
 | `POST` | `/api/vaults` | Create a new vault: directory structure, CLAUDE.md, skills, reset script, index, log |
 | `GET` | `/api/vault-templates` | List available template names |
 | `GET` | `/api/fs/ls?path=<dir>` | List subdirectories at a path (defaults to home dir); powers the inline directory browser |
 | `GET` | `/api/vault/export?vault=<id>` | Streams the vault as a `.kc.zip` archive; includes wiki, raw, skills, schema, reset script, and a generated `vault-manifest.json`; excludes machine-specific settings, `.obsidian/`, `.DS_Store` |
-| `POST` | `/api/vault/import` | Accepts `multipart/form-data` with a `.kc.zip` archive and target path; validates ZIP magic bytes and manifest; extracts, registers in `vaults.json`, and returns the new vault entry |
+| `POST` | `/api/vault/import` | Accepts `multipart/form-data` with a `.kc.zip` archive and target path; validates ZIP magic bytes and manifest; extracts, registers in `vaults.json`, and returns the new vault entry. Returns 403 unless `--allow-write` is set |
 | `GET` | `/api/wiki/files?vault=<id>` | Returns a JSON array of all `.md` paths under the vault's `wiki/` |
 | `GET` | `/api/wiki/file?vault=<id>&path=<rel>` | Returns the raw content of a wiki file; path-traversal protected |
 | `GET` | `/api/wiki/page/export?vault=<id>&path=<rel>&format=md\|html` | Exports a wiki page with frontmatter stripped and internal `.md` links resolved to plain text; `format=md` returns Markdown, `format=html` returns a standalone HTML document with embedded CSS |
 | `GET` | `/api/wiki/image?vault=<id>&path=<rel>` | Serves an image from `wiki/images/` (SVG, PNG, JPG, GIF, WebP) |
-| `POST` | `/api/raw/upload?vault=<id>` | Accepts `multipart/form-data`; writes file to `raw/`; rejects overwrites |
+| `POST` | `/api/raw/upload?vault=<id>` | Accepts `multipart/form-data`; writes file to `raw/`; rejects overwrites. Returns 403 unless `--allow-write` is set |
 
-The server binds to `127.0.0.1` only and never modifies files in `wiki/`.
+The server binds to `127.0.0.1` only and never modifies files in `wiki/`. Upload and import endpoints return 403 unless the server was started with `--allow-write`.
 
 ---
 
