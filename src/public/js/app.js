@@ -48,6 +48,14 @@ function showToast(message, type = 'info', durationMs = 3000) {
     vaults = [];
   }
 
+  // Fetch server config — controls whether upload/import are allowed
+  let allowWrite = false;
+  try {
+    const cr = await fetch('/api/config');
+    const config = await cr.json();
+    allowWrite = config.allowWrite === true;
+  } catch (_) { /* default to disabled */ }
+
   if (vaults.length === 0) {
     // No vaults — hide selector and name label but keep "+" button visible
     vaultSelect.classList.add('hidden');
@@ -486,7 +494,13 @@ function showToast(message, type = 'info', durationMs = 3000) {
   const btnUpload = document.getElementById('btn-upload');
   const uploadInput = document.getElementById('upload-input');
 
+  if (!allowWrite) {
+    btnUpload.disabled = true;
+    btnUpload.title = 'Uploads disabled — start server with --allow-write';
+  }
+
   btnUpload.addEventListener('click', () => {
+    if (!allowWrite) return;
     uploadInput.click();
   });
 
@@ -569,6 +583,11 @@ function showToast(message, type = 'info', durationMs = 3000) {
   // --- Import Vault — TASK-EI011, TASK-EI012, TASK-EI013, TASK-EI014 ---
   const btnImport = document.getElementById('btn-import');
   const importInput = document.getElementById('import-input');
+
+  if (!allowWrite) {
+    btnImport.disabled = true;
+    btnImport.title = 'Imports disabled — start server with --allow-write';
+  }
   const importModalOverlay = document.getElementById('import-modal-overlay');
   const importModalClose = document.getElementById('import-modal-close');
   const importModalCancel = document.getElementById('import-modal-cancel');
@@ -605,7 +624,7 @@ function showToast(message, type = 'info', durationMs = 3000) {
     _importFile = null;
   }
 
-  btnImport.addEventListener('click', () => { importInput.click(); });
+  btnImport.addEventListener('click', () => { if (allowWrite) importInput.click(); });
 
   importInput.addEventListener('change', () => {
     const files = importInput.files;

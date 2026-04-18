@@ -24,4 +24,6 @@ if [ ! -d "node_modules" ]; then
 fi
 
 echo "Starting server on http://localhost:${PORT}"
-node server/index.js
+# Pass --allow-write to enable upload and import (disabled by default for safety)
+# Usage: ./start.sh --allow-write
+node server/index.js "$@"

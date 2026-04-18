@@ -14,6 +14,8 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const ALLOW_WRITE = process.argv.includes('--allow-write')
+  || (process.env.ALLOW_WRITE || '').toLowerCase() === 'true';
 
 const LEGACY_ROOT = path.resolve(__dirname, '..', '..');
 const TEMPLATES_DIR = path.join(LEGACY_ROOT, '.claude', 'vault-templates');
@@ -64,6 +66,11 @@ app.use(express.static(path.join(__dirname, '..', 'public'), {
   }
 }));
 app.use(express.json());
+
+// --- API: Server configuration ---
+app.get('/api/config', (_req, res) => {
+  res.json({ allowWrite: ALLOW_WRITE });
+});
 
 // --- API: Vault registry (client receives id/name/template/purpose — path is stripped) ---
 app.get('/api/vaults', async (_req, res) => {
@@ -901,6 +908,7 @@ const importUpload = multer({
 });
 
 app.post('/api/vault/import', importUpload.single('archive'), async (req, res) => {
+  if (!ALLOW_WRITE) return res.status(403).json({ error: 'Imports are disabled. Start the server with --allow-write to enable.' });
   const tempFile = req.file?.path;
   try {
     // Catch multer size-limit error
@@ -1307,6 +1315,7 @@ app.get('/api/wiki/image', async (req, res) => {
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.post('/api/raw/upload', upload.single('file'), async (req, res) => {
+  if (!ALLOW_WRITE) return res.status(403).json({ error: 'Uploads are disabled. Start the server with --allow-write to enable.' });
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file provided.' });
@@ -1350,6 +1359,8 @@ app.post('/api/raw/upload', upload.single('file'), async (req, res) => {
 // TASK-004
 app.listen(PORT, '127.0.0.1', async () => {
   console.log(`Knowledge Compiler running at http://127.0.0.1:${PORT}`);
+  console.log(`Write mode: ${ALLOW_WRITE ? 'ENABLED (--allow-write)' : 'disabled (read-only)'}`);
+  if (!ALLOW_WRITE) console.log('  Tip: start with --allow-write or ALLOW_WRITE=true to enable uploads and imports');
   const registry = await loadVaultRegistry();
   if (registry.length > 0) {
     const ids = registry.map(v => v.id).join(', ');
