@@ -110,7 +110,7 @@ const GraphBuilder = (() => {
         error: file.error,
         inbound: 0,
         outbound: 0,
-        colour: getTypeColour(type),
+        color: getTypeColor(type),
         // D3 simulation will add x, y, vx, vy
       };
       nodes.set(file.path, node);

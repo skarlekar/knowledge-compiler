@@ -102,7 +102,7 @@ const Visualization = (() => {
         return cls;
       })
       .attr('r', NODE_RADIUS)
-      .attr('fill', d => d.colour)
+      .attr('fill', d => d.color)
       // TASK-039  FR-NAV-001 — click
       .on('click', (event, d) => {
         event.stopPropagation();
@@ -230,9 +230,9 @@ const Visualization = (() => {
   }
 
   // ---------------------------------------------------------------------------
-  // Centre on node — part of TASK-040  FR-NAV-002
+  // Center on node — part of TASK-040  FR-NAV-002
   // ---------------------------------------------------------------------------
-  function centreOnNode(nodeId) {
+  function centerOnNode(nodeId) {
     const node = graphData.nodeList.find(n => n.id === nodeId);
     if (!node || node.x == null) return;
 
@@ -334,10 +334,10 @@ const Visualization = (() => {
 
     const legendEl = document.getElementById('legend');
     legendEl.innerHTML = Object.keys(typeCounts).sort().map(type => {
-      const colour = getTypeColour(type);
+      const color = getTypeColor(type);
       const dimmed = hiddenTypes.has(type) ? 'dimmed' : '';
       return `<div class="legend-item ${dimmed}" data-type="${type}">
-        <span class="legend-swatch" style="background:${colour}"></span>
+        <span class="legend-swatch" style="background:${color}"></span>
         <span>${type} (${typeCounts[type]})</span>
       </div>`;
     }).join('');
@@ -418,5 +418,5 @@ const Visualization = (() => {
     currentTransform = d3.zoomIdentity;
   }
 
-  return { init, setActive, centreOnNode, fitToView, applyFilter, destroy };
+  return { init, setActive, centerOnNode, fitToView, applyFilter, destroy };
 })();

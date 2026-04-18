@@ -48,7 +48,7 @@ The application is a read-only viewer. It shall not create, edit, or delete Mark
 | **Content panel** | The UI panel that renders the Markdown content of the active node. |
 | **Graph panel** | The UI panel that displays the interactive node-edge graph. |
 | **Frontmatter** | YAML metadata between `---` delimiters at the top of a Markdown file. |
-| **EARS** | Easy Approach to Requirements Syntax — a structured natural language notation for requirements. Uses templates: *Ubiquitous* ("The \<system\> shall …"), *Event-driven* ("When \<trigger\>, the \<system\> shall …"), *State-driven* ("While \<state\>, the \<system\> shall …"), *Unwanted behaviour* ("If \<condition\>, then the \<system\> shall …"), *Optional* ("Where \<feature\>, the \<system\> shall …"). |
+| **EARS** | Easy Approach to Requirements Syntax — a structured natural language notation for requirements. Uses templates: *Ubiquitous* ("The \<system\> shall …"), *Event-driven* ("When \<trigger\>, the \<system\> shall …"), *State-driven* ("While \<state\>, the \<system\> shall …"), *Unwanted behavior* ("If \<condition\>, then the \<system\> shall …"), *Optional* ("Where \<feature\>, the \<system\> shall …"). |
 | **Graph layout** | The algorithm that determines the spatial positions of nodes and edges (e.g., force-directed). |
 | **Relative link** | A standard Markdown link of the form `[text](relative/path.md)` where the path is relative to the file containing the link. |
 
@@ -66,11 +66,11 @@ Requirements in this document use the following EARS sentence patterns:
 
 | Pattern | Template | Use |
 |---------|----------|-----|
-| **Ubiquitous** | The system shall \<action\>. | Always-active behaviour. |
+| **Ubiquitous** | The system shall \<action\>. | Always-active behavior. |
 | **Event-driven** | When \<trigger\>, the system shall \<action\>. | Response to a specific event. |
-| **State-driven** | While \<condition\>, the system shall \<action\>. | Behaviour during a state. |
+| **State-driven** | While \<condition\>, the system shall \<action\>. | Behavior during a state. |
 | **Unwanted** | If \<unwanted condition\>, then the system shall \<action\>. | Handling of error or edge case. |
-| **Optional** | Where \<feature is enabled\>, the system shall \<action\>. | Configurable behaviour. |
+| **Optional** | Where \<feature is enabled\>, the system shall \<action\>. | Configurable behavior. |
 
 ---
 
@@ -156,11 +156,11 @@ The system shall render the graph model as a 2D interactive node-edge diagram wi
 
 The system shall render each node as a labeled shape. The label shall display the node's display name (from FR-GC-004).
 
-#### FR-GV-003 — Node Type Colour Coding
+#### FR-GV-003 — Node Type Color Coding
 
-The system shall assign a distinct fill colour to each node based on its `type` frontmatter value. The following mappings shall be used:
+The system shall assign a distinct fill color to each node based on its `type` frontmatter value. The following mappings shall be used:
 
-| Type | Colour | Hex |
+| Type | Color | Hex |
 |------|--------|-----|
 | `concept` | Blue | `#4A90D9` |
 | `entity` | Green | `#50B86C` |
@@ -169,16 +169,16 @@ The system shall assign a distinct fill colour to each node based on its `type` 
 | `journal` | Teal | `#17A2B8` |
 | `presentation` | Coral | `#E85D75` |
 | `index` | Gold | `#F1C40F` |
-| `log` | Dark Grey | `#6C757D` |
+| `log` | Dark Gray | `#6C757D` |
 | `dashboard` | Indigo | `#6610F2` |
 | `flashcards` | Pink | `#E83E8C` |
-| Other / missing | Light Grey | `#95A5A6` |
+| Other / missing | Light Gray | `#95A5A6` |
 
 If a wiki file's `type` frontmatter value is absent, the system shall infer the type from the file's parent directory name (e.g., a file in `wiki/concepts/` shall be treated as type `concept`). If neither frontmatter type nor parent directory yields a known type, the system shall assign the type `other`.
 
 #### FR-GV-014 — Node Type Legend
 
-The system shall display a legend within the graph panel that lists every node type present in the current graph. Each legend entry shall show the type's colour swatch (a filled square or circle matching the node fill colour from FR-GV-003) and the type label. The legend shall update dynamically: when a type filter (FR-SF-003) hides all nodes of a given type, that type's legend entry shall appear dimmed (50% opacity). The legend shall be positioned in the top-right corner of the graph panel and shall not overlap with graph nodes.
+The system shall display a legend within the graph panel that lists every node type present in the current graph. Each legend entry shall show the type's color swatch (a filled square or circle matching the node fill color from FR-GV-003) and the type label. The legend shall update dynamically: when a type filter (FR-SF-003) hides all nodes of a given type, that type's legend entry shall appear dimmed (50% opacity). The legend shall be positioned in the top-right corner of the graph panel and shall not overlap with graph nodes.
 
 #### FR-GV-004 — Edge Rendering
 
@@ -186,7 +186,7 @@ The system shall render each edge as a directed line (with arrowhead) from the s
 
 #### FR-GV-005 — Active Node Highlight
 
-When a node is the active node, the system shall visually distinguish it from other nodes by applying a highlight border (3px solid, colour `#E74C3C`) and scaling the node to 1.3× its default size.
+When a node is the active node, the system shall visually distinguish it from other nodes by applying a highlight border (3px solid, color `#E74C3C`) and scaling the node to 1.3× its default size.
 
 #### FR-GV-006 — Default Selection
 
@@ -218,7 +218,7 @@ The system shall provide a "Fit" button that, when clicked, adjusts the zoom and
 
 #### FR-GV-013 — Zoom Controls
 
-The system shall provide "Zoom In" (+) and "Zoom Out" (−) buttons that, when clicked, increase or decrease the zoom level by 20% of the current scale, respectively, centred on the graph panel's midpoint.
+The system shall provide "Zoom In" (+) and "Zoom Out" (−) buttons that, when clicked, increase or decrease the zoom level by 20% of the current scale, respectively, centered on the graph panel's midpoint.
 
 ### 3.3 Content Rendering
 
@@ -244,7 +244,7 @@ When the rendered content contains a link whose target begins with `http://` or 
 
 #### FR-CR-006 — Frontmatter Metadata Bar
 
-The system shall display a metadata bar above the rendered Markdown content showing the following frontmatter fields when present: `title`, `type` (with the corresponding colour badge from FR-GV-003), `tags` (as individual badges), `confidence`, and `updated`.
+The system shall display a metadata bar above the rendered Markdown content showing the following frontmatter fields when present: `title`, `type` (with the corresponding color badge from FR-GV-003), `tags` (as individual badges), `confidence`, and `updated`.
 
 ### 3.4 Navigation
 
@@ -284,7 +284,7 @@ When the user selects an item from the search dropdown, the system shall set the
 
 #### FR-SF-003 — Type Filter
 
-The system shall provide a set of toggle buttons (one per node `type` value present in the graph: concept, entity, summary, synthesis, journal, presentation, index, log, dashboard, flashcards, other). When a type toggle is deactivated, the system shall hide all nodes of that type and their connected edges from the graph panel. The active node shall not be hidden regardless of filter state. Each toggle button shall display the corresponding colour swatch from FR-GV-003 beside the type label.
+The system shall provide a set of toggle buttons (one per node `type` value present in the graph: concept, entity, summary, synthesis, journal, presentation, index, log, dashboard, flashcards, other). When a type toggle is deactivated, the system shall hide all nodes of that type and their connected edges from the graph panel. The active node shall not be hidden regardless of filter state. Each toggle button shall display the corresponding color swatch from FR-GV-003 beside the type label.
 
 #### FR-SF-004 — Filter Persistence
 
@@ -364,9 +364,9 @@ The system shall support the following keyboard shortcuts:
 - `Backspace` (when search is not focused) — Navigate back (FR-NAV-005).
 - `Home` — Navigate to index.md (FR-NAV-006).
 
-#### NFR-USE-004 — Colour Contrast
+#### NFR-USE-004 — Color Contrast
 
-All text labels on nodes shall have a contrast ratio of at least 4.5:1 against the node fill colour, per WCAG 2.1 AA.
+All text labels on nodes shall have a contrast ratio of at least 4.5:1 against the node fill color, per WCAG 2.1 AA.
 
 ### 4.3 Reliability
 
@@ -450,7 +450,7 @@ The graph panel shall contain: (a) the interactive graph visualization, (b) the 
 
 #### IR-GP-002 — Background
 
-The graph panel shall have a light neutral background (colour `#F8F9FA`).
+The graph panel shall have a light neutral background (color `#F8F9FA`).
 
 #### IR-GP-003 — Node Label Visibility
 
@@ -468,11 +468,11 @@ The content panel shall be independently scrollable when the rendered content ex
 
 #### IR-CP-003 — Typography
 
-The content panel shall render text using a readable sans-serif font (system default or a bundled web font), with a base font size of 16px, line height of 1.6, and a maximum content width of 800px centred within the panel.
+The content panel shall render text using a readable sans-serif font (system default or a bundled web font), with a base font size of 16px, line height of 1.6, and a maximum content width of 800px centered within the panel.
 
 #### IR-CP-004 — Code Block Styling
 
-Code blocks in the content panel shall use a monospace font, have a light grey background (`#F5F5F5`), contrasting border, and horizontal scrolling if the content overflows.
+Code blocks in the content panel shall use a monospace font, have a light gray background (`#F5F5F5`), contrasting border, and horizontal scrolling if the content overflows.
 
 ### 5.4 Interaction Summary
 
@@ -482,7 +482,7 @@ The following table summarizes all user actions and corresponding system respons
 |---|-------------|-------------|-----------------|-----------------|
 | 1 | Application loads | — | Graph renders with `index.md` selected; content panel shows `index.md` content. | FR-GV-001, FR-GV-006, FR-CR-001 |
 | 2 | Click a node | Graph panel | Node becomes active; content panel updates. | FR-NAV-001, FR-NAV-002, FR-CR-001 |
-| 3 | Click an internal link in content | Content panel | Linked node becomes active; graph centres on it; content updates. | FR-CR-004, FR-NAV-003, FR-NAV-002 |
+| 3 | Click an internal link in content | Content panel | Linked node becomes active; graph centers on it; content updates. | FR-CR-004, FR-NAV-003, FR-NAV-002 |
 | 4 | Click an external link in content | Content panel | Link opens in a new browser tab. | FR-CR-005 |
 | 5 | Drag on graph background | Graph panel | Graph view pans. | FR-GV-007 |
 | 6 | Scroll wheel on graph | Graph panel | Graph view zooms in/out. | FR-GV-008 |
@@ -577,7 +577,7 @@ The following files exist under `wiki/` as of 2026-04-10 and constitute the init
 | `flashcards.md` | flashcards | 1 |
 | `journal/template.md` | journal | 0 |
 
-### 7.2 Node Colour Reference
+### 7.2 Node Color Reference
 
 ```
 Concept      ████  #4A90D9

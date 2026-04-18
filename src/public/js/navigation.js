@@ -12,7 +12,7 @@ const Navigation = (() => {
   const MAX_TRAIL = 10;
   let trail = [];            // breadcrumb history: { nodeId, scrollTop } (most recent last)
   let trailIndex = -1;       // pointer into trail for back navigation
-  let onNavigate = null;     // callback(nodeId, skipRecord, skipCentre, restoreScrollTop) — wired by app.js
+  let onNavigate = null;     // callback(nodeId, skipRecord, skipCenter, restoreScrollTop) — wired by app.js
   let graphNodes = null;
 
   function init(nodes, navigateCallback) {

@@ -146,7 +146,7 @@ const ContentRenderer = (() => {
     // Title
     html += `<span class="meta-title">${escapeHtml(node.displayName)}</span>`;
 
-    // Type badge with colour
+    // Type badge with color
     if (node.type) {
       const bg = getTypeColour(node.type);
       html += `<span class="meta-badge" style="background:${bg}">${node.type}</span>`;

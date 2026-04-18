@@ -2,8 +2,8 @@
    utils.js — Shared constants and helpers
    ========================================================================== */
 
-// TASK-019  FR-GV-003 — Node type colour map (research + code-analysis + portfolio types)
-const TYPE_COLOURS = {
+// TASK-019  FR-GV-003 — Node type color map (research + code-analysis + portfolio types)
+const TYPE_COLORS = {
   // Research vault types
   concept:                '#4A90D9',
   entity:                 '#50B86C',
@@ -38,7 +38,7 @@ const TYPE_COLOURS = {
   other:                  '#95A5A6'
 };
 
-// TASK-055  NFR-USE-004 — Label colour for WCAG 4.5:1 contrast
+// TASK-055  NFR-USE-004 — Label color for WCAG 4.5:1 contrast
 const TYPE_LABEL_COLOURS = {
   concept:                '#fff',
   entity:                 '#fff',
@@ -76,14 +76,14 @@ const TYPE_LABEL_COLOURS = {
  * TASK-019  FR-GV-003
  */
 function inferType(filePath, frontmatterType) {
-  if (frontmatterType && TYPE_COLOURS[frontmatterType]) return frontmatterType;
+  if (frontmatterType && TYPE_COLORS[frontmatterType]) return frontmatterType;
   if (frontmatterType) return frontmatterType;              // unknown but present
 
   // Infer from directory
   const parts = filePath.split('/');
   if (parts.length >= 2) {
     const dir = parts[parts.length - 2];     // parent folder name
-    if (TYPE_COLOURS[dir]) return dir;
+    if (TYPE_COLORS[dir]) return dir;
     // Explicit mappings for code-analysis and portfolio plural directories
     const PLURAL_MAP = {
       'classes':             'class',
@@ -108,21 +108,21 @@ function inferType(filePath, frontmatterType) {
     if (PLURAL_MAP[dir]) return PLURAL_MAP[dir];
     // Handle generic plural directory names (concepts -> concept, entities -> entity, etc.)
     const singular = dir.replace(/s$/, '').replace(/ie$/, 'y');
-    if (TYPE_COLOURS[singular]) return singular;
+    if (TYPE_COLORS[singular]) return singular;
   }
 
   // Special root-level files
   const filename = parts[parts.length - 1].replace('.md', '');
-  if (TYPE_COLOURS[filename]) return filename;               // e.g., "index", "log"
+  if (TYPE_COLORS[filename]) return filename;               // e.g., "index", "log"
 
   return 'other';
 }
 
 /**
- * Get fill colour for a node type.
+ * Get fill color for a node type.
  */
-function getTypeColour(type) {
-  return TYPE_COLOURS[type] || TYPE_COLOURS.other;
+function getTypeColor(type) {
+  return TYPE_COLORS[type] || TYPE_COLORS.other;
 }
 
 /**

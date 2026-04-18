@@ -267,7 +267,8 @@ The skill detects the vault type and prints a complete formatted guide of all av
 - When a page's source file changes, update the page and flag the change in `log.md`
 - When in doubt about a class's behavior, set confidence to "low" and note the uncertainty
 - Keep pages focused — one class/function/module per page
-- Use plain English — define jargon on first use in each page
+- Use plain US English — define jargon on first use in each page
+- Always use US English spelling (e.g., color not colour, behavior not behaviour, analyze not analyse, organize not organise, center not centre, recognize not recognise)
 - All dates in ISO 8601 format: YYYY-MM-DD
 - Record file:line references as `filename.js:NNN` (not full absolute paths)
 - Never fabricate implementation details — only document what is directly observable in source code

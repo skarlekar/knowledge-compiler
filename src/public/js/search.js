@@ -80,9 +80,9 @@ const Search = (() => {
     const container = document.getElementById('type-filters');
 
     container.innerHTML = types.map(type => {
-      const colour = getTypeColour(type);
+      const color = getTypeColor(type);
       return `<button class="type-filter-btn" data-type="${type}" title="Toggle ${type}">
-        <span class="swatch" style="background:${colour}"></span>
+        <span class="swatch" style="background:${color}"></span>
         ${type}
       </button>`;
     }).join('');

@@ -200,7 +200,7 @@ Used during the Research workflow when Claude is selecting sources rather than t
 
 - Academic papers and preprints (arXiv, Google Scholar, PubMed, ACM)
 - Official documentation (vendor docs, standards bodies, government sources)
-- Established publications (major newspapers, peer-reviewed journals, recognised industry analysts)
+- Established publications (major newspapers, peer-reviewed journals, recognized industry analysts)
 - Named authors with verifiable domain credentials
 
 **Avoid:**
@@ -350,7 +350,8 @@ The skill detects the vault type and prints a complete formatted guide of all av
 - Prefer updating existing pages over creating duplicates
 - When in doubt about a claim, set confidence to "low" and note the uncertainty
 - Keep pages focused — one concept per page, split if a page gets too long
-- Use plain English — define jargon on first use in each page
+- Use plain US English — define jargon on first use in each page
+- Always use US English spelling (e.g., color not colour, behavior not behaviour, analyze not analyse, organize not organise, center not centre, recognize not recognise)
 - All dates in ISO 8601 format: YYYY-MM-DD
 - When a source provides specific examples, include them with concrete details
 - Research populates the wiki from external sources; Query reasons over the existing wiki — never conflate the two

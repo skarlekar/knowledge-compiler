@@ -142,7 +142,7 @@ Transforms the wiki's accumulated knowledge into a 4,000-5,500 word long-form ne
 ```text
 What does the wiki say about transformer architectures?
 Which concepts are related to knowledge graphs?
-Summarise what we know about agentic AI.
+Summarize what we know about agentic AI.
 ```
 
 Claude reads relevant wiki pages and synthesises an answer with citations. If the answer reveals cross-cutting insights, a synthesis page is created automatically.
@@ -283,7 +283,7 @@ graph TD
 
 - *No JS framework* — the app is small enough that D3 + vanilla DOM manipulation covers everything without React/Vue overhead
 - *Pre-ticking simulation* — the D3 force simulation runs ~300 ticks synchronously before first paint; eliminates the "graph settling" animation that would otherwise take 15–25 seconds
-- *`skipCentre` flag on `navigateTo`* — separates "centre on a node" from "fit whole graph to view"; initial load and vault switch use fit-to-view, not node-centring
+- *`skipCenter` flag on `navigateTo`* — separates "center on a node" from "fit whole graph to view"; initial load and vault switch use fit-to-view, not node-centering
 - *Server-backed directory browser* — the browser cannot expose OS filesystem paths from a native `<input type="file">` picker; the server `GET /api/fs/ls` endpoint drives an inline directory browser instead
 - *Vault registry cache* — `_vaultRegistry` is cached in the server process and invalidated only when `POST /api/vaults` creates a new vault
 

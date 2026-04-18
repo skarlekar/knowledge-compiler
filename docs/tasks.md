@@ -309,7 +309,7 @@ Create a breadcrumb bar between the toolbar and panels. Display the last 10 visi
 
 Using D3.js (d3-force) or Cytoscape.js, render the graph model as a 2D force-directed layout in the graph panel. Each node is a labeled shape displaying the node's display name (FR-GV-002). Set the graph panel background to `#F8F9FA` (IR-GP-002).
 
-### TASK-019 — Implement Node Type Colour Coding
+### TASK-019 — Implement Node Type Color Coding
 
 | Field | Value |
 |-------|-------|
@@ -318,7 +318,7 @@ Using D3.js (d3-force) or Cytoscape.js, render the graph model as a 2D force-dir
 | **Priority** | P1 |
 | **Status** | not-started |
 
-Assign fill colours to nodes based on their `type`:
+Assign fill colors to nodes based on their `type`:
 
 | Type | Hex |
 |------|-----|
@@ -356,7 +356,7 @@ Render each edge as a directed line with an arrowhead pointing from the source n
 | **Priority** | P0 |
 | **Status** | not-started |
 
-When a node becomes active, apply a visual highlight: 3px solid border with colour `#E74C3C`, scaled to 1.3× its default size. Remove the highlight from any previously active node.
+When a node becomes active, apply a visual highlight: 3px solid border with color `#E74C3C`, scaled to 1.3× its default size. Remove the highlight from any previously active node.
 
 ### TASK-022 — Implement Default Selection
 
@@ -448,7 +448,7 @@ Wire the toolbar "Fit" button to adjust zoom and pan so all nodes are visible wi
 | **Priority** | P1 |
 | **Status** | not-started |
 
-Add "+" and "−" floating buttons positioned in the bottom-right corner of the graph panel (IR-GP-001). Each click increases or decreases zoom by 20% of the current scale, centred on the panel midpoint.
+Add "+" and "−" floating buttons positioned in the bottom-right corner of the graph panel (IR-GP-001). Each click increases or decreases zoom by 20% of the current scale, centered on the panel midpoint.
 
 ### TASK-030 — Implement Node Type Legend
 
@@ -459,7 +459,7 @@ Add "+" and "−" floating buttons positioned in the bottom-right corner of the 
 | **Priority** | P1 |
 | **Status** | not-started |
 
-Display a legend in the top-right corner of the graph panel (IR-GP-001). Each entry shows a colour swatch and type label for every node type present in the graph. When a type filter hides all nodes of a type, that legend entry appears at 50% opacity. The legend shall not overlap graph nodes.
+Display a legend in the top-right corner of the graph panel (IR-GP-001). Each entry shows a color swatch and type label for every node type present in the graph. When a type filter hides all nodes of a type, that legend entry appears at 50% opacity. The legend shall not overlap graph nodes.
 
 ### TASK-031 — Implement Node Label Visibility by Zoom Level
 
@@ -529,7 +529,7 @@ Render links beginning with `http://` or `https://` as standard hyperlinks that 
 | **Priority** | P1 |
 | **Status** | not-started |
 
-Display a metadata bar above the rendered Markdown content showing: `title`, `type` (with colour badge from FR-GV-003), `tags` (as individual badges), `confidence`, and `updated`.
+Display a metadata bar above the rendered Markdown content showing: `title`, `type` (with color badge from FR-GV-003), `tags` (as individual badges), `confidence`, and `updated`.
 
 ### TASK-037 — Implement Content Panel Styling
 
@@ -544,8 +544,8 @@ Style the content panel:
 
 - **Structure**: Metadata bar at top, rendered Markdown below, no other elements (IR-CP-001).
 - **Scrolling**: Independently scrollable when content exceeds panel height (IR-CP-002).
-- **Typography**: Readable sans-serif font, 16px base size, 1.6 line height, max content width 800px centred (IR-CP-003).
-- **Code blocks**: Monospace font, light grey background (`#F5F5F5`), contrasting border, horizontal scroll on overflow (IR-CP-004).
+- **Typography**: Readable sans-serif font, 16px base size, 1.6 line height, max content width 800px centered (IR-CP-003).
+- **Code blocks**: Monospace font, light gray background (`#F5F5F5`), contrasting border, horizontal scroll on overflow (IR-CP-004).
 
 ### TASK-038 — Implement HTML Sanitization
 
@@ -584,7 +584,7 @@ When the user clicks a node in the graph panel, set that node as the active node
 
 When the active node changes:
 
-- (a) Scroll/centre the graph panel so the active node is visible.
+- (a) Scroll/center the graph panel so the active node is visible.
 - (b) Apply the active node highlight (FR-GV-005); remove highlight from the previous node.
 - (c) Render the new active node's content in the content panel (FR-CR-001).
 
@@ -656,7 +656,7 @@ When the user selects an item from the search dropdown, set the corresponding no
 | **Priority** | P1 |
 | **Status** | not-started |
 
-Add toggle buttons to the toolbar — one per node type present in the graph (concept, entity, summary, synthesis, journal, presentation, index, log, dashboard, flashcards, other). Each toggle shows the type's colour swatch. When deactivated, hide all nodes of that type and their connected edges. The active node is never hidden.
+Add toggle buttons to the toolbar — one per node type present in the graph (concept, entity, summary, synthesis, journal, presentation, index, log, dashboard, flashcards, other). Each toggle shows the type's color swatch. When deactivated, hide all nodes of that type and their connected edges. The active node is never hidden.
 
 ### TASK-047 — Implement Filter Persistence & Layout Re-stabilization
 
@@ -871,7 +871,7 @@ Maintain ≥30 FPS during pan, zoom, and node drag for graphs of up to 200 nodes
 
 ## 16. Phase 13 — Accessibility & Visual Polish
 
-### TASK-055 — Ensure Colour Contrast Compliance
+### TASK-055 — Ensure Color Contrast Compliance
 
 | Field | Value |
 |-------|-------|
@@ -880,7 +880,7 @@ Maintain ≥30 FPS during pan, zoom, and node drag for graphs of up to 200 nodes
 | **Priority** | P2 |
 | **Status** | not-started |
 
-Verify that all text labels on nodes have a contrast ratio of ≥4.5:1 against the node fill colour (WCAG 2.1 AA). Adjust label colour (black or white) per node type as needed.
+Verify that all text labels on nodes have a contrast ratio of ≥4.5:1 against the node fill color (WCAG 2.1 AA). Adjust label color (black or white) per node type as needed.
 
 ---
 
@@ -929,7 +929,7 @@ The following table maps every specification requirement to its implementing tas
 | FR-GC-009 | Frontmatter Parsing | TASK-009 |
 | FR-GV-001 | Graph Rendering | TASK-018 |
 | FR-GV-002 | Node Representation | TASK-018 |
-| FR-GV-003 | Node Type Colour Coding | TASK-019 |
+| FR-GV-003 | Node Type Color Coding | TASK-019 |
 | FR-GV-004 | Edge Rendering | TASK-020 |
 | FR-GV-005 | Active Node Highlight | TASK-021 |
 | FR-GV-006 | Default Selection | TASK-022 |
@@ -976,7 +976,7 @@ The following table maps every specification requirement to its implementing tas
 | NFR-USE-001 | Responsive Layout | TASK-015 |
 | NFR-USE-002 | Panel Resize | TASK-014 |
 | NFR-USE-003 | Keyboard Accessibility | TASK-049 |
-| NFR-USE-004 | Colour Contrast | TASK-055 |
+| NFR-USE-004 | Color Contrast | TASK-055 |
 | NFR-REL-001 | Empty Wiki Degradation | TASK-050 |
 | NFR-REL-002 | Malformed Frontmatter | TASK-009 |
 | NFR-REL-003 | File Read Error | TASK-051 |

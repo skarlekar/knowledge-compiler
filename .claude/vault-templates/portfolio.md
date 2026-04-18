@@ -359,7 +359,8 @@ When the user says "journal" or "journal [description]":
 - Never fabricate prices, balances, or financial data — only record what is fetched from a live source or provided by the user
 - Mark `confidence: low` whenever data is more than 30 days old
 - Record `price_fetch_date` every time a price is updated — staleness is tracked by this field
-- Use plain English — define financial jargon on first use in each page
+- Use plain US English — define financial jargon on first use in each page
+- Always use US English spelling (e.g., color not colour, behavior not behaviour, analyze not analyse, organize not organise, center not centre, recognize not recognise)
 - All dates in ISO 8601 format: YYYY-MM-DD
 - Record dollar amounts with 2 decimal places
 - When in doubt about a value, record it as-is and set confidence to "low"

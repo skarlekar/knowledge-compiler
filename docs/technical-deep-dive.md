@@ -58,13 +58,13 @@ Each **Node** carries everything downstream modules need:
   error: false,                // true if the file could not be fetched
   inbound: 4,                  // count of pages that link to this one
   outbound: 6,                 // count of internal links from this page
-  colour: "#6366f1"            // hex from TYPE_COLOURS map in utils.js
+  color: "#6366f1"            // hex from TYPE_COLORS map in utils.js
 }
 ```
 
 > **Why file path as ID?** Using the wiki-root-relative path (`wiki/modules/app.md`) as the node ID makes link resolution trivial: extract the `href` from a Markdown link, resolve it relative to the linking file's path, and you have the node ID directly. No secondary lookup table needed.
 
-The **type system** is enforced by `inferType()` in `utils.js`. It runs a priority chain: explicit `type` frontmatter field wins, then path-segment inference (a file in `wiki/modules/` is type `module`, in `wiki/classes/` is type `class`, etc.), then a final fallback to `"other"`. The type determines the node colour in the graph and the badge displayed in the content panel's metadata bar.
+The **type system** is enforced by `inferType()` in `utils.js`. It runs a priority chain: explicit `type` frontmatter field wins, then path-segment inference (a file in `wiki/modules/` is type `module`, in `wiki/classes/` is type `class`, etc.), then a final fallback to `"other"`. The type determines the node color in the graph and the badge displayed in the content panel's metadata bar.
 
 ## 3. The Graph Engine Deep Dive
 
@@ -97,7 +97,7 @@ function extractLinks(body) {
 
 ### Rendering the Graph
 
-`Visualization.init(data, onNodeClick)` is the most complex module in the codebase. It sets up a D3 force simulation with four forces (link spring at 80 px, charge repulsion at −200, collision at 12 px, centre gravity), then does something clever before the first paint.
+`Visualization.init(data, onNodeClick)` is the most complex module in the codebase. It sets up a D3 force simulation with four forces (link spring at 80 px, charge repulsion at −200, collision at 12 px, center gravity), then does something clever before the first paint.
 
 **The Pre-Tick Optimization:** Immediately after creating the simulation, the code calls `.stop()` and then `.tick()` the full mathematical number of steps synchronously in a tight loop. By the time the browser gets a frame to paint, every node already has a stable `(x, y)` position. The user sees the graph fully laid out rather than watching it settle from a chaotic initial state over several seconds.
 
@@ -139,20 +139,20 @@ A fallback also handles `<pre><code class="language-mermaid">` elements produced
 
 ## 5. How It All Connects — `navigateTo` as the System Spine
 
-The most important function in the entire frontend is `navigateTo(nodeId, skipRecord, skipCentre)`. Every navigation event in the application — clicking a node in the graph, selecting a search result, clicking a link in the content panel, pressing the back button, using keyboard shortcuts — flows through this single function.
+The most important function in the entire frontend is `navigateTo(nodeId, skipRecord, skipCenter)`. Every navigation event in the application — clicking a node in the graph, selecting a search result, clicking a link in the content panel, pressing the back button, using keyboard shortcuts — flows through this single function.
 
 ```javascript
 // src/public/js/app.js — navigateTo() (inside main())
-function navigateTo(nodeId, skipRecord = false, skipCentre = false) {
+function navigateTo(nodeId, skipRecord = false, skipCenter = false) {
   activeNodeId = nodeId;
   Visualization.setActive(nodeId);
-  if (!skipCentre) Visualization.centreOnNode(nodeId);
+  if (!skipCenter) Visualization.centerOnNode(nodeId);
   ContentRenderer.render(nodeId);
   if (!skipRecord) Navigation.recordNavigation(nodeId);
 }
 ```
 
-The two boolean flags exist to handle specific cases without duplicating logic. `skipRecord` is set when the back button calls `navigateTo` — without it, the back button would add the destination to the trail, defeating its purpose. `skipCentre` is set on initial load and vault switch when `fitToView()` already handles framing — skipping the per-node centre avoids a janky double-animation.
+The two boolean flags exist to handle specific cases without duplicating logic. `skipRecord` is set when the back button calls `navigateTo` — without it, the back button would add the destination to the trail, defeating its purpose. `skipCenter` is set on initial load and vault switch when `fitToView()` already handles framing — skipping the per-node center avoids a janky double-animation.
 
 > **Key Insight:** This is the [Event-Driven Communication Pattern](../patterns/event-driven-communication.md) in action. None of Visualization, Search, Navigation, or ContentRenderer know about each other. They each hold a reference to `navigateTo` and call it when the user acts. `navigateTo` then orchestrates the response across all of them. The only module that knows the full graph of dependencies is `App`.
 
@@ -341,16 +341,16 @@ function guardedFilePath(allowedDir, relPath) {
 
 ### Global State Pollution from Utils
 
-`utils.js` exposes all its symbols as raw globals on `window` — `TYPE_COLOURS`, `TYPE_LABEL_COLOURS`, `inferType`, `getTypeColour`, `resolveLink`, `displayName` — without any wrapping. Every other frontend module uses the IIFE pattern to encapsulate state; `utils.js` is the inconsistent exception.
+`utils.js` exposes all its symbols as raw globals on `window` — `TYPE_COLORS`, `TYPE_LABEL_COLORS`, `inferType`, `getTypeColor`, `resolveLink`, `displayName` — without any wrapping. Every other frontend module uses the IIFE pattern to encapsulate state; `utils.js` is the inconsistent exception.
 
-**Impact:** Any vendored library or future module that accidentally declares a variable named `resolveLink` or `TYPE_COLOURS` silently overwrites the utils definition. Static analysis tools cannot catch this at the module level.
+**Impact:** Any vendored library or future module that accidentally declares a variable named `resolveLink` or `TYPE_COLORS` silently overwrites the utils definition. Static analysis tools cannot catch this at the module level.
 
 **Fix:** Wrap in an IIFE and expose as `Utils`:
 
 ```javascript
 const Utils = (() => {
-  const TYPE_COLOURS = { /* ... */ };
-  return { TYPE_COLOURS, TYPE_LABEL_COLOURS, inferType, getTypeColour, resolveLink, displayName };
+  const TYPE_COLORS = { /* ... */ };
+  return { TYPE_COLORS, TYPE_LABEL_COLORS, inferType, getTypeColor, resolveLink, displayName };
 })();
 ```
 

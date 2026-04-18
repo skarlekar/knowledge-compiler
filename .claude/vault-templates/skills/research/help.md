@@ -20,7 +20,7 @@ Read the active vault's `CLAUDE.md`.
 
 ### 2 — Print the appropriate help guide
 
-Print the guide exactly as written below for the detected vault type. Do not summarise — print the full guide so the user can read it.
+Print the guide exactly as written below for the detected vault type. Do not summarize — print the full guide so the user can read it.
 
 ---
 
@@ -37,7 +37,7 @@ This vault ingests source material, builds a structured wiki, and produces newsl
 ## Operations
 
 ### `ingest <url>`
-Fetch a webpage, convert it to Markdown in `raw/`, then analyse the content and populate wiki pages (concepts, entities, summaries).
+Fetch a webpage, convert it to Markdown in `raw/`, then analyze the content and populate wiki pages (concepts, entities, summaries).
 
 ```
 ingest https://arxiv.org/abs/2401.00123
@@ -118,7 +118,7 @@ Ask any question in plain English. Claude will read relevant wiki pages and synt
 What does the wiki say about retrieval augmented generation?
 What sources have we ingested about LLM agents?
 Which concepts are related to knowledge graphs?
-Summarise what we know about [topic].
+Summarize what we know about [topic].
 ```
 
 ---

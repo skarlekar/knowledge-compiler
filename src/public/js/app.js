@@ -93,14 +93,14 @@ function showToast(message, type = 'info', durationMs = 3000) {
 
   // --- Central navigation function ---
   // TASK-040  FR-NAV-002 — synchronize graph highlight, content, breadcrumb
-  function navigateTo(nodeId, skipRecord, skipCentre, restoreScrollTop) {
+  function navigateTo(nodeId, skipRecord, skipCenter, restoreScrollTop) {
     if (!data.nodes.has(nodeId)) return;
     activeNodeId = nodeId;
     // Capture scroll position of the current page BEFORE render() resets it
     const contentBody = document.getElementById('content-body');
     const prevScrollTop = contentBody ? contentBody.scrollTop : 0;
     Visualization.setActive(nodeId);
-    if (!skipCentre) Visualization.centreOnNode(nodeId);
+    if (!skipCenter) Visualization.centerOnNode(nodeId);
     ContentRenderer.render(nodeId, restoreScrollTop);
     if (!skipRecord) {
       Navigation.recordNavigation(nodeId, prevScrollTop);
@@ -138,7 +138,7 @@ function showToast(message, type = 'info', durationMs = 3000) {
         Visualization.applyFilter(hiddenTypes);
       });
       const indexNode = data.nodes.has('index.md') ? 'index.md' : data.nodeList[0].id;
-      navigateTo(indexNode, false, true);  // skipCentre
+      navigateTo(indexNode, false, true);  // skipCenter
       Visualization.fitToView();
       showToast(`Switched to ${newVaultName} — ${data.nodeList.length} nodes, ${data.edges.length} edges`, 'success');
     } catch (err) {
@@ -423,7 +423,7 @@ function showToast(message, type = 'info', durationMs = 3000) {
 
     // --- Default selection — TASK-022  FR-GV-006 ---
     const defaultNode = data.nodes.has('index.md') ? 'index.md' : data.nodeList[0].id;
-    navigateTo(defaultNode, false, true);  // skipCentre — fitToView handles framing
+    navigateTo(defaultNode, false, true);  // skipCenter — fitToView handles framing
     Visualization.fitToView();
   }
 
@@ -468,7 +468,7 @@ function showToast(message, type = 'info', durationMs = 3000) {
       const restoreNode = data.nodes.has(previousActive) ? previousActive
         : data.nodes.has('index.md') ? 'index.md'
         : data.nodeList[0].id;
-      navigateTo(restoreNode, false, true);  // skipCentre
+      navigateTo(restoreNode, false, true);  // skipCenter
       Visualization.fitToView();
 
       showToast(`Graph refreshed — ${data.nodeList.length} nodes, ${data.edges.length} edges`, 'success');

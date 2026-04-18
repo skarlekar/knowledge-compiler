@@ -30,7 +30,7 @@ research may duplicate or risk contradicting curated content.
 
 ### 3 — Search for candidate sources
 
-Run 2–3 `WebSearch` queries with varied angles to maximise source diversity:
+Run 2–3 `WebSearch` queries with varied angles to maximize source diversity:
 
 - Conceptual overview: `<topic> overview explanation`
 - Academic / technical: `<topic> research paper arxiv documentation`

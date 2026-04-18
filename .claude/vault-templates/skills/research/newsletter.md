@@ -215,7 +215,7 @@ the back-linking step and for future cross-reference decisions.
 - **Jargon inline** — define technical terms on first use in plain English,
   embedded in the sentence: *"harness engineering — the discipline of building the
   runtime infrastructure that constrains, verifies, and observes an AI agent's
-  behaviour in production"*
+  behavior in production"*
 
 ---
 
@@ -448,7 +448,7 @@ than "security risks." Include at least one threat that will surprise the reader
 ### Toolscape Section
 
 1. Open with a one-sentence framing of the landscape
-2. Organise by functional category (not vendor)
+2. Organize by functional category (not vendor)
 3. For each category:
 
 ```markdown
