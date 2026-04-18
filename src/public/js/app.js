@@ -93,14 +93,17 @@ function showToast(message, type = 'info', durationMs = 3000) {
 
   // --- Central navigation function ---
   // TASK-040  FR-NAV-002 — synchronize graph highlight, content, breadcrumb
-  function navigateTo(nodeId, skipRecord, skipCentre) {
+  function navigateTo(nodeId, skipRecord, skipCentre, restoreScrollTop) {
     if (!data.nodes.has(nodeId)) return;
     activeNodeId = nodeId;
+    // Capture scroll position of the current page BEFORE render() resets it
+    const contentBody = document.getElementById('content-body');
+    const prevScrollTop = contentBody ? contentBody.scrollTop : 0;
     Visualization.setActive(nodeId);
     if (!skipCentre) Visualization.centreOnNode(nodeId);
-    ContentRenderer.render(nodeId);
+    ContentRenderer.render(nodeId, restoreScrollTop);
     if (!skipRecord) {
-      Navigation.recordNavigation(nodeId);
+      Navigation.recordNavigation(nodeId, prevScrollTop);
     }
   }
 

@@ -76,7 +76,7 @@ const ContentRenderer = (() => {
    * Render a node's content into the content panel.
    * TASK-032  FR-CR-001
    */
-  function render(nodeId) {
+  function render(nodeId, restoreScrollTop) {
     const node = graphNodes.get(nodeId);
     if (!node) return;
 
@@ -113,7 +113,7 @@ const ContentRenderer = (() => {
     // Wrap in content-inner for max-width — IR-CP-003
     const contentBody = document.getElementById('content-body');
     contentBody.innerHTML = `<div class="content-inner">${html}</div>`;
-    contentBody.scrollTop = 0;
+    contentBody.scrollTop = restoreScrollTop || 0;
 
     // Post-process links — TASK-034  FR-CR-004, TASK-035  FR-CR-005
     processLinks(contentBody, nodeId);

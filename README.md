@@ -516,7 +516,7 @@ Which classes depend on the database layer?
 | **Content panel** | Renders Markdown with a metadata bar showing `type`, `tags`, `confidence`, and `updated` |
 | **Mermaid diagrams** | Fenced ` ```mermaid ``` ` blocks render as inline SVG automatically |
 | **Bidirectional navigation** | Click nodes in the graph or links in the content panel — both stay in sync |
-| **Breadcrumb trail** | Last 10 visited nodes, each clickable |
+| **Breadcrumb trail** | Last 10 visited nodes, each clickable; navigating back (via Back button, Backspace, or breadcrumb click) restores the scroll position to exactly where you left off |
 | **Search** | Instant dropdown search across node names and file paths |
 | **Type filters** | Toggle-button filters that show/hide node types |
 | **Graph statistics** | Node count, edge count, nodes per type, orphan count |
