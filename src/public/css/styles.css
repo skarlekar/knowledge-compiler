@@ -398,6 +398,23 @@ html, body {
 }
 .zoom-btn:hover { background: #e8e8e8; }
 
+/* Content panel zoom controls */
+.content-zoom-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 20;
+}
+#content-panel {
+  position: relative;
+}
+.zoom-btn-reset {
+  font-size: 16px;
+}
+
 /* --- Stats Bar  FR-GS-001 ----------------------------------------------- */
 .stats-bar {
   position: absolute;

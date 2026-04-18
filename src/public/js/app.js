@@ -509,6 +509,35 @@ function showToast(message, type = 'info', durationMs = 3000) {
   // --- Resizable divider — TASK-014  NFR-USE-002 ---
   initDivider();
 
+  // --- Content panel zoom controls ---
+  const contentBody = document.getElementById('content-body');
+  const DEFAULT_ZOOM = 1;
+  const ZOOM_STEP = 0.1;
+  const MIN_ZOOM = 0.5;
+  const MAX_ZOOM = 2.0;
+  let contentZoom = DEFAULT_ZOOM;
+
+  function applyContentZoom() {
+    contentBody.style.transformOrigin = 'top left';
+    contentBody.style.transform = `scale(${contentZoom})`;
+    contentBody.style.width = `${100 / contentZoom}%`;
+  }
+
+  document.getElementById('btn-content-zoom-in').addEventListener('click', () => {
+    contentZoom = Math.min(MAX_ZOOM, +(contentZoom + ZOOM_STEP).toFixed(2));
+    applyContentZoom();
+  });
+
+  document.getElementById('btn-content-zoom-out').addEventListener('click', () => {
+    contentZoom = Math.max(MIN_ZOOM, +(contentZoom - ZOOM_STEP).toFixed(2));
+    applyContentZoom();
+  });
+
+  document.getElementById('btn-content-zoom-reset').addEventListener('click', () => {
+    contentZoom = DEFAULT_ZOOM;
+    applyContentZoom();
+  });
+
 })();
 
 // ---------------------------------------------------------------------------
