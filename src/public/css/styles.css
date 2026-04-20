@@ -230,6 +230,7 @@ html, body {
   gap: 8px;
   font-size: 13px;
   min-height: 40px;
+  flex-shrink: 0;
 }
 
 .metadata-bar .meta-title { font-weight: 600; font-size: 15px; }
