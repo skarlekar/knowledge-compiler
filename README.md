@@ -20,7 +20,7 @@ A vault is a self-contained knowledge base with its own:
 
 | Template | Best For | Wiki Page Types |
 | -------- | -------- | --------------- |
-| `research` | Articles, papers, newsletters, domain knowledge | concept, entity, summary, synthesis, newsletter, journal |
+| `research` | Articles, papers, newsletters, blogs, domain knowledge | concept, entity, summary, synthesis, newsletter, blog, journal |
 | `code-analysis` | Analyzing software codebases | class, function, api, library, pattern, anti-pattern, module, journal |
 | `portfolio` | Personal financial portfolio tracking | holding, watchlist, thesis, decision, sector, asset-class, performance-snapshot, asset, liability, net-worth-snapshot |
 
@@ -108,11 +108,11 @@ Type `help` in the Claude session. Claude detects the vault type and prints a co
 help
 ```
 
-Each vault type gets its own guide — research vaults see ingest/research/newsletter operations, code-analysis vaults see analyze/analyze-deps/document-project, and portfolio vaults see add-holding/portfolio-review/rebalance and more.
+Each vault type gets its own guide — research vaults see ingest/research/newsletter/blog operations, code-analysis vaults see analyze/analyze-deps/document-project, and portfolio vaults see add-holding/portfolio-review/rebalance and more.
 
 ### Working with a Research Vault
 
-Research vaults build knowledge from source material — web articles, PDFs, and topic searches.
+Research vaults build knowledge from source material — web articles, PDFs, and topic searches — and produce newsletters and blog posts from accumulated knowledge.
 
 **Ingest a web article:**
 
@@ -145,6 +145,14 @@ newsletter "The Future of Knowledge Graphs"
 ```
 
 Transforms the wiki's accumulated knowledge into a 4,000-5,500 word long-form newsletter. If wiki coverage is thin, `research` runs automatically first.
+
+**Generate a blog post:**
+
+```text
+blog "Your CI/CD Pipeline Won't Save You"
+```
+
+Writes a 2,800-6,200 word blog post with numbered analysis sections, concrete scenarios, counter-arguments, and a 5-item action plan. If wiki coverage is thin, `research` runs automatically first.
 
 **Ask questions:**
 
@@ -325,6 +333,7 @@ Three-tier skills architecture:
         │   ├── ingest-pdf.md
         │   ├── research.md
         │   ├── newsletter.md
+        │   ├── blog.md
         │   ├── help.md
         │   └── lint.md
         ├── code-analysis/             # 2. Code-analysis vault-specific skills
@@ -398,6 +407,17 @@ newsletter "harness engineering"
 ```
 
 Saved to `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`.
+
+#### `blog <topic>`
+
+Transforms the wiki's accumulated knowledge into a 2,800-6,200 word long-form blog post in the Signal Over Noise style. Blogs differ from newsletters: they use numbered analysis sections with repeating internal patterns (Scenario/Why It's Hard/Defense), concrete running examples, an optional "Two Things the Skeptics Get Wrong" counter-argument section, a comparison table, and close with a 5-item action plan under "The Bottom Line." Automatically runs `research` first if wiki coverage is thin.
+
+```text
+blog "Your CI/CD Pipeline Won't Save You"
+blog "The Always On Memory Agent"
+```
+
+Saved to `wiki/blogs/blog-<topic-slug>-<YYYY-MM-DD>.md`.
 
 ---
 
@@ -496,7 +516,7 @@ journal
 journal "analyzed auth module after refactor"
 ```
 
-Session types: `ingest` · `research` · `newsletter` · `query` · `lint` · `mixed` (research); `analyze` · `query` · `lint` · `mixed` (code-analysis); `add-holding` · `refresh` · `review` · `rebalance` · `tax` · `net-worth` · `query` · `lint` · `mixed` (portfolio).
+Session types: `ingest` · `research` · `newsletter` · `blog` · `query` · `lint` · `mixed` (research); `analyze` · `query` · `lint` · `mixed` (code-analysis); `add-holding` · `refresh` · `review` · `rebalance` · `tax` · `net-worth` · `query` · `lint` · `mixed` (portfolio).
 
 #### `help`
 

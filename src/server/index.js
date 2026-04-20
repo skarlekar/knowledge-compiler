@@ -607,7 +607,7 @@ app.post('/api/vaults', async (req, res) => {
     // Create directory structure
     const RESEARCH_SUBDIRS = [
       'raw', 'wiki', 'wiki/summaries', 'wiki/concepts', 'wiki/entities',
-      'wiki/synthesis', 'wiki/newsletters', 'wiki/journal', 'wiki/presentations', 'wiki/images'
+      'wiki/synthesis', 'wiki/newsletters', 'wiki/blogs', 'wiki/journal', 'wiki/presentations', 'wiki/images'
     ];
     const CODE_SUBDIRS = [
       'raw', 'wiki', 'wiki/classes', 'wiki/functions', 'wiki/apis',

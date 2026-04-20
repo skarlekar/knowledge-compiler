@@ -11,6 +11,7 @@ const TYPE_COLORS = {
   synthesis:              '#9B59B6',
   journal:                '#17A2B8',
   presentation:           '#E85D75',
+  blog:                   '#D35400',
   index:                  '#F1C40F',
   log:                    '#6C757D',
   dashboard:              '#6610F2',
@@ -46,6 +47,7 @@ const TYPE_LABEL_COLORS = {
   synthesis:              '#fff',
   journal:                '#fff',
   presentation:           '#fff',
+  blog:                   '#fff',
   index:                  '#000',   // Gold needs dark text
   log:                    '#fff',
   dashboard:              '#fff',
@@ -93,6 +95,7 @@ function inferType(filePath, frontmatterType) {
       'patterns':            'pattern',
       'anti-patterns':       'anti-pattern',
       'modules':             'module',
+      'blogs':               'blog',
       // Portfolio vault directories
       'holdings':            'holding',
       'watchlist':           'watchlist',

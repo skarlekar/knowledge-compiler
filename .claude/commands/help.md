@@ -86,6 +86,19 @@ The newsletter is saved to `wiki/newsletters/` and source wiki pages are back-li
 
 ---
 
+### `blog <topic>`
+Transform the wiki's accumulated knowledge on a topic into a long-form blog post (2,800-6,200 words) in the Signal Over Noise style. If wiki coverage is thin, `research` is invoked automatically first.
+
+```
+blog "Your CI/CD Pipeline Won't Save You"
+blog "The Always On Memory Agent"
+blog "Agentic AI Security for the Enterprise"
+```
+
+Blogs differ from newsletters: they use numbered analysis sections with repeating internal patterns (Scenario/Why/Defense), concrete running examples, a "Two Things the Skeptics Get Wrong" counter-argument section, and close with a 5-item action plan under "The Bottom Line." The blog is saved to `wiki/blogs/` and source wiki pages are back-linked.
+
+---
+
 ### `lint`
 Scan all wiki pages for health issues and auto-fix what can be fixed.
 
@@ -113,7 +126,7 @@ Journal entries record *session reasoning*, not domain content. Domain content b
 ---
 
 ### Asking questions
-Ask any question in plain English. Claude will read relevant wiki pages and synthesise an answer with citations.
+Ask any question in plain English. Claude will read relevant wiki pages and synthesize an answer with citations.
 
 ```
 What does the wiki say about retrieval augmented generation?
@@ -132,7 +145,8 @@ Summarize what we know about [topic].
 
 **Building wiki coverage on a topic:**
 1. `research <topic>` — searches and populates wiki
-2. `newsletter <topic>` — turns coverage into publishable content
+2. `newsletter <topic>` — turns coverage into a newsletter
+3. `blog <topic>` — turns coverage into a long-form blog post
 
 **Keeping the wiki healthy:**
 - Run `lint` periodically, especially after many ingestions

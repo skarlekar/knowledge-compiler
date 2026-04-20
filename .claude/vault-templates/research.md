@@ -16,6 +16,7 @@ This is an LLM-maintained knowledge base on Signal Over Noise. The LLM writes an
 - `wiki/entities/` — Entity pages (people, tools, organizations, products — whatever "things" exist in your domain).
 - `wiki/synthesis/` — Comparison tables, decision frameworks, cross-cutting analyses.
 - `wiki/newsletters/` — Long-form newsletter issues generated from wiki content.
+- `wiki/blogs/` — Long-form blog posts generated from wiki content in Signal Over Noise style.
 - `wiki/journal/` — Research or session journal entries.
 - `wiki/presentations/` — Marp slide decks generated from wiki content.
 - `wiki/images/` — SVG and image files referenced by wiki pages and newsletters. Served by the Express app at `/api/wiki/image?path=<wiki-root-relative-path>`.
@@ -87,7 +88,7 @@ Every wiki page uses this frontmatter and structure:
 ```yaml
 ---
 title: "Page Title"
-type: concept | entity | summary | synthesis | newsletter | journal
+type: concept | entity | summary | synthesis | newsletter | blog | journal
 tags: [tag1, tag2, tag3]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -136,6 +137,14 @@ confidence: high | medium | low
 - Sections: Opening hook, Problem/Context (with comparison table), 2–3 deep analysis sections, Threats, Toolscape, Action Item, Closing Signal
 - Footer: `*Tags: #tag1 #tag2 ...*`
 - Additional frontmatter fields: `word_count: ~NNNN` and `wiki_pages_used: [...]`
+
+**Blog pages** (`wiki/blogs/`):
+
+- Named `blog-<topic-slug>-<YYYY-MM-DD>.md`; if a same-day same-topic file already exists, append a version suffix: `blog-<topic-slug>-<YYYY-MM-DD>-v2.md`, `-v3.md`, etc.
+- Long-form (2,800–6,200 words), Signal Over Noise blog style
+- Sections: Opening hook (2–4 paragraphs, topic named within 24–55 words), numbered/labeled analysis sections with repeating internal pattern (Scenario → Why It's Hard → Defense/Rule), optional "Two Things the Skeptics Get Wrong" counter-argument section, Blueprint/Framework table, Action Items (5 numbered imperatives), "The Bottom Line" closing
+- Additional frontmatter fields: `word_count: ~NNNN`, `wiki_pages_used: [...]`, and `hook_archetype: <archetype-name>`
+- Footer: `*Tags: #tag1 #tag2 ...*`
 
 **Journal pages** (`wiki/journal/`):
 
@@ -322,6 +331,15 @@ Invoke the `newsletter` skill with the topic as the argument:
 `Skill({ skill: "newsletter", args: "<topic>" })`
 
 The skill assesses wiki coverage, auto-invokes the `research` skill if coverage is insufficient, then writes a long-form newsletter to `wiki/newsletters/newsletter-<topic-slug>-<YYYY-MM-DD>.md`. Once the skill completes, update `wiki/index.md` (add newsletter entry under the Newsletters section) and append to `wiki/log.md`. Then invoke the `journal` skill: `Skill({ skill: "journal", args: "newsletter: <topic>" })`
+
+### Blog
+
+When the user says "blog [topic]":
+
+Invoke the `blog` skill with the topic as the argument:
+`Skill({ skill: "blog", args: "<topic>" })`
+
+The skill assesses wiki coverage, auto-invokes the `research` skill if coverage is insufficient, then writes a long-form blog post to `wiki/blogs/blog-<topic-slug>-<YYYY-MM-DD>.md`. Once the skill completes, update `wiki/index.md` (add blog entry under the Blogs section) and append to `wiki/log.md`. Then invoke the `journal` skill: `Skill({ skill: "journal", args: "blog: <topic>" })`
 
 ### Journal
 
