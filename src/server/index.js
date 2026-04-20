@@ -554,6 +554,7 @@ Orphan pages (no inbound links), stale claims, contradictions between pages, mis
 
 // --- API: Create a new vault ---
 app.post('/api/vaults', async (req, res) => {
+  if (!ALLOW_WRITE) return res.status(403).json({ error: 'Vault creation is disabled. Start the server with --allow-write to enable.' });
   try {
     const { name, path: vaultPath, purpose, template } = req.body || {};
 

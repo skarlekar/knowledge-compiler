@@ -165,6 +165,12 @@ function showToast(message, type = 'info', durationMs = 3000) {
   // New Vault modal — always wired up so "+" works even on a fresh clone
   // -------------------------------------------------------------------------
   const btnNewVault = document.getElementById('btn-new-vault');
+
+  if (!allowWrite) {
+    btnNewVault.disabled = true;
+    btnNewVault.title = 'Vault creation disabled — start server with --allow-write';
+  }
+
   const modalOverlay = document.getElementById('vault-modal-overlay');
   const modalClose = document.getElementById('vault-modal-close');
   const modalCancel = document.getElementById('vault-modal-cancel');
