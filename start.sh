@@ -4,10 +4,10 @@ set -euo pipefail
 PORT="${PORT:-3000}"
 
 # Kill any process already listening on the port
-existing_pid=$(lsof -ti tcp:"$PORT" 2>/dev/null || true)
-if [ -n "$existing_pid" ]; then
-  echo "Stopping existing server (PID $existing_pid) on port $PORT..."
-  kill "$existing_pid"
+existing_pids=$(lsof -ti tcp:"$PORT" 2>/dev/null || true)
+if [ -n "$existing_pids" ]; then
+  echo "Stopping existing server on port $PORT (PIDs: $(echo $existing_pids))..."
+  kill $existing_pids
   # Wait up to 3 seconds for the port to free
   for i in 1 2 3; do
     sleep 1
