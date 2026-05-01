@@ -8,6 +8,17 @@ Saves to `wiki/deep-dive/technical-deep-dive.md` (overwrites on each run). Creat
 
 None required. Uses existing wiki pages and source files in the vault.
 
+## Required outputs (success criteria)
+
+This skill is **not** complete until **all four** of the following are true. Verify each one before reporting success:
+
+1. `wiki/deep-dive/technical-deep-dive.md` exists and was just written (mtime is from this session).
+2. `wiki/index.md` contains a `## Deep Dive` section with a working relative link to `deep-dive/technical-deep-dive.md`.
+3. `wiki/index.md`'s Statistics table contains a `Deep Dive` row.
+4. `wiki/log.md` has a new `### YYYY-MM-DD — document-project` entry from this run.
+
+If any of (1)–(4) is missing at the end of this skill, treat the run as failed: fix the missing artifact, then re-verify. Do not silently report success when any of these is absent — the deep-dive page is invisible to the wiki UI without the index entry, and that is the failure mode this skill exists to prevent.
+
 ## Steps
 
 ### 1 — Gather codebase knowledge
@@ -121,11 +132,47 @@ graph LR
 
 Create `wiki/deep-dive/` if it does not exist. Write the completed document to `wiki/deep-dive/technical-deep-dive.md`.
 
-### 5 — Update log
+### 5 — REQUIRED: Update the wiki index
+
+This step is **not optional**. Without it, the deep-dive page exists on disk but is invisible to the wiki UI (which renders from the index). Edit `wiki/index.md` directly with the Edit tool; do not skip ahead to logging.
+
+Make all three edits below in a single pass:
+
+**A. Statistics table** — ensure a `Deep Dive` row exists. If absent, add it (count = 1 once the page is written). Update the count if the row already exists.
+
+```markdown
+| Deep Dive | 1 |
+```
+
+**B. Deep Dive section** — append (or refresh) a `## Deep Dive` section near the bottom of the index, immediately before `## Journals` if that section exists, otherwise at the end. Use this format:
+
+```markdown
+## Deep Dive
+
+| Page | Description | Updated |
+| --- | --- | --- |
+| [Technical Deep Dive](deep-dive/technical-deep-dive.md) | Generated narrative deep dive across all wiki pages | YYYY-MM-DD |
+```
+
+If the section already exists, update only the `Updated` cell to today's date.
+
+**C. Frontmatter** — bump the `updated:` field in the index frontmatter to today's date.
+
+### 5b — REQUIRED: Verify the index update landed
+
+Before moving on, run this check:
+
+```bash
+grep -n "## Deep Dive" wiki/index.md && grep -n "deep-dive/technical-deep-dive.md" wiki/index.md && grep -n "| Deep Dive |" wiki/index.md
+```
+
+All three greps must return a match. If any returns nothing, go back to Step 5 and fix the missing piece. Do not proceed to Step 6 until this verification passes.
+
+### 6 — Update log
 
 Append to `wiki/log.md`:
 
-```
+```text
 ### YYYY-MM-DD — document-project
 
 - **Source/Trigger**: `document-project` skill
@@ -135,11 +182,12 @@ Append to `wiki/log.md`:
 - **Notes**: any sections skipped due to thin coverage
 ```
 
-### 6 — Report
+### 7 — Report
 
-Tell the user:
+Before reporting, re-confirm all four success criteria from the top of this skill (deep-dive file written, index `## Deep Dive` section present, Statistics row present, log entry written). Then tell the user:
 
-- Document saved to `wiki/deep-dive/technical-deep-dive.md`
+- Document saved to `wiki/deep-dive/technical-deep-dive.md` (with mtime)
+- Confirmed `wiki/index.md` updated: Statistics `Deep Dive` row + `## Deep Dive` section linking to the page
 - Number of sections generated
 - Number of wiki pages used as source material
 - Any sections skipped or thinly covered, with a suggested `analyze <path>` run to fill them

@@ -72,6 +72,23 @@ Run the appropriate checks for the vault type:
 **Missing index entries** — wiki files that exist on disk but are not listed in `wiki/index.md`
 - Fix: add the missing entry
 
+**Missing deep-dive page** — `wiki/deep-dive/technical-deep-dive.md` does not exist
+- Check with Bash: `ls wiki/deep-dive/technical-deep-dive.md 2>&1`
+- Fix: invoke `Skill({ skill: "document-project" })` to regenerate it
+
+**Stale deep-dive page** — `wiki/deep-dive/technical-deep-dive.md` is older than the most recently updated module, class, or function page
+- Check with Bash: compare mtimes of `wiki/deep-dive/technical-deep-dive.md` against the newest file under `wiki/modules/`, `wiki/classes/`, `wiki/functions/`
+- Cannot auto-fix automatically (regeneration is expensive); flag for human review with the suggestion: "Run `document-project` to refresh the deep-dive — it is older than recent wiki updates"
+
+**Deep-dive not indexed** — `wiki/deep-dive/technical-deep-dive.md` exists but `wiki/index.md` has no `## Deep Dive` section linking to it
+- Fix: add the `## Deep Dive` section to `wiki/index.md` (use the format from the `document-project` skill) and ensure the Statistics table has a `Deep Dive` row
+
+**Untracked source files (coverage gap)** — files exist on disk under a previously analyzed path that are not referenced in any wiki page's `source_files` frontmatter, and are not listed in `## Deferred Files`
+- Discover the analyzed root(s): grep all wiki pages' `source_files` frontmatter to extract distinct root directories
+- For each root, enumerate source files using the same default + framework-specific extension list as the `analyze-code` skill (Step 2b), applying the same default exclusions (`node_modules/`, `vendor/`, `core/` for Drupal, etc.)
+- Diff against the union of (a) files referenced in any `source_files` and (b) files listed in `wiki/index.md`'s `## Deferred Files` section
+- Cannot auto-fix: report each untracked file with the suggestion: "Re-run `analyze <root>` to pick up the missing files, or move them to `## Deferred Files` if intentionally out of scope"
+
 ---
 
 ### 4 — Apply auto-fixes

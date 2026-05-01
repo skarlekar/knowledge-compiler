@@ -66,17 +66,17 @@ Every wiki page uses this frontmatter:
 ```yaml
 ---
 title: "Page Title"
-type: class | function | api | library | pattern | anti-pattern | module | journal
+type: class | function | api | library | pattern | anti-pattern | module | journal | technical-deep-dive
 tags: [tag1, tag2, tag3]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 source_files: ["src/path/to/file.js"]
-language: javascript | python | typescript | java | go | rust | other
+language: javascript | typescript | python | java | go | rust | php | ruby | csharp | kotlin | swift | scala | cpp | c | twig | yaml | other
 confidence: high | medium | low
 ---
 ```
 
-Note: `source_files` replaces the research vault's `sources` field. `language` is required for class, function, api, pattern, anti-pattern, and module pages.
+Note: `source_files` replaces the research vault's `sources` field. `language` is required for class, function, api, pattern, anti-pattern, and module pages. The `technical-deep-dive` type is reserved for the auto-generated `wiki/deep-dive/technical-deep-dive.md` (one per vault).
 
 ### Required Sections by Page Type
 
@@ -139,6 +139,11 @@ Note: `source_files` replaces the research vault's `sources` field. `language` i
 - `## Internal Dependencies` — Links to other module pages this module imports from
 - `## External Dependencies` — Links to library pages for third-party dependencies used
 
+**Deep Dive pages** (`wiki/deep-dive/`):
+
+- Single auto-generated file: `technical-deep-dive.md`. Frontmatter `type: technical-deep-dive`. Regenerated (overwritten) on every `analyze` run by the `document-project` skill — never hand-edit
+- Required sections are determined by the `document-project` skill itself; the wiki schema treats this page as opaque generated content. The page must be linked from `wiki/index.md` under a `## Deep Dive` section
+
 **Journal pages** (`wiki/journal/`):
 
 - Named `journal-<session-slug>-<YYYY-MM-DD>.md`; if a same-day same-slug file exists, append `-v2`, `-v3`, etc.
@@ -149,6 +154,40 @@ Note: `source_files` replaces the research vault's `sources` field. `language` i
 - `## Result` — What was produced; links to new or updated wiki pages
 - `## What Went Well` — What worked as expected or better
 - `## What Could Improve` — Gaps, follow-up questions, stale references found
+
+## Framework Conventions
+
+When the analyzed codebase uses a known framework, override the generic "one page per file" mental model with the framework's natural unit of organisation. Detected frameworks (see the `analyze` workflow Step 2a) get the following treatment:
+
+### Drupal
+
+- **One module page per Drupal module directory**, not per `.php`/`.module` file. The `source_files` frontmatter lists every file under the module directory (`modules/custom/<name>/**`).
+- `hook_*` functions in `.module` files: roll up onto the module page as entries in the `## Public Exports` table; promote to a dedicated function page only if the hook implementation is non-trivial (≥30 lines or branching logic).
+- `.routing.yml` route entries: each becomes an API page (`wiki/apis/<route-name>.md`), with the `## Endpoint` section showing the URL pattern and the `## Method` field listing allowed methods from the route definition.
+- `.services.yml` entries: each becomes a class page (the service class) with a `Container Service ID` note in `## Definition`.
+- `.info.yml`, `.libraries.yml`, `.permissions.yml`: summarise on the module page; do not create separate pages for them.
+- Twig templates (`.twig`): only create a page if the template encodes business logic; pure markup templates can be referenced from the relevant module page without their own page.
+
+### Rails
+
+- **One module page per Rails engine / namespace**, with controllers, models, and helpers grouped under it.
+- `config/routes.rb` entries: each top-level resource → one API page; show all REST methods together.
+- ActiveRecord models: one class page per model, with associations linked to other model pages.
+
+### Django
+
+- **One module page per Django app** (the directory containing `models.py`, `views.py`, `urls.py`).
+- `urls.py` entries: each route → one API page.
+- Models: one class page per `models.Model` subclass.
+
+### Next.js
+
+- **One module page per route segment** (`app/<segment>/`), grouping page, layout, and route handler.
+- API routes (`app/api/.../route.ts`): each becomes an API page.
+
+### Generic (no framework detected)
+
+Fall back to the default rules in `Required Sections by Page Type` — one page per file/class/function as appropriate.
 
 ## Linking Conventions
 
@@ -165,7 +204,7 @@ Note: `source_files` replaces the research vault's `sources` field. `language` i
 
 <!-- CUSTOMIZE: Adjust these tags to match your codebase's technology stack and architecture. -->
 
-- **Language**: `javascript`, `python`, `typescript`, `java`, `go`, `rust`, `other`
+- **Language**: `javascript`, `typescript`, `python`, `java`, `go`, `rust`, `php`, `ruby`, `csharp`, `kotlin`, `swift`, `scala`, `cpp`, `c`, `twig`, `yaml`, `other`
 - **Layer**: `frontend`, `backend`, `database`, `infrastructure`, `testing`, `shared`
 - **Concern**: `routing`, `authentication`, `state-management`, `rendering`, `data-access`, `configuration`, `validation`, `error-handling`
 - **Quality**: `well-structured`, `needs-refactor`, `technical-debt`, `performance-critical`
@@ -196,7 +235,7 @@ When the user says "analyze [file-or-directory]":
 8. Add cross-links in both directions between all touched pages
 9. Update `wiki/index.md` and `wiki/log.md`
 10. Invoke the `journal` skill: `Skill({ skill: "journal", args: "analyze: <path>" })`
-11. Invoke the `document-project` skill: `Skill({ skill: "document-project" })`
+11. **REQUIRED** — Invoke the `document-project` skill: `Skill({ skill: "document-project" })`. The analyze run is not complete until `wiki/deep-dive/technical-deep-dive.md` has been regenerated and indexed. Verify the file exists and was written during this session before reporting results to the user; if it is missing or stale, retry once.
 
 ### Analyze Dependencies
 

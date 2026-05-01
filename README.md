@@ -21,7 +21,7 @@ A vault is a self-contained knowledge base with its own:
 | Template | Best For | Wiki Page Types |
 | -------- | -------- | --------------- |
 | `research` | Articles, papers, newsletters, blogs, domain knowledge | concept, entity, summary, synthesis, newsletter, blog, journal |
-| `code-analysis` | Analyzing software codebases | class, function, api, library, pattern, anti-pattern, module, journal |
+| `code-analysis` | Analyzing software codebases (framework-aware: Drupal, Rails, Django, Next.js, Symfony, Express) | class, function, api, library, pattern, anti-pattern, module, journal, technical-deep-dive |
 | `portfolio` | Personal financial portfolio tracking | holding, watchlist, thesis, decision, sector, asset-class, performance-snapshot, asset, liability, net-worth-snapshot |
 
 Vaults are registered in `vaults.json` at the project root and selected via a dropdown in the UI. Each vault is fully independent — different schema, different skills, different wiki content.
@@ -168,13 +168,17 @@ Claude reads relevant wiki pages and synthesises an answer with citations. If th
 
 Code-analysis vaults read source code and build a structured wiki of classes, functions, APIs, libraries, patterns, and anti-patterns.
 
+**Supported languages and frameworks.** Default extensions cover JavaScript, TypeScript, Python, Java, Go, Rust, Ruby, PHP, C#, Kotlin, Swift, Scala, C, C++, plus YAML and TOML. The `analyze` skill auto-detects the framework (Drupal, Rails, Django, Next.js, Symfony, Express) from manifests like `composer.json`, `package.json`, `Gemfile`, etc., then expands the file glob with framework-specific extensions (Drupal's `.module`/`.inc`/`.install`/`.theme`/`.profile`/`.engine`/`.twig` and structural YAMLs; Rails' `.erb`/`.rake`; Django templates; etc.). When a known framework is detected, page mapping follows that framework's natural unit — e.g. **one wiki module page per Drupal module directory** (not per file), with `.routing.yml` routes becoming API pages and `hook_*` functions rolling up onto the module page.
+
+**Default exclusions.** `node_modules/`, `vendor/`, `.git/`, `dist/`, `build/`, lockfiles, and source maps are excluded by default. Drupal adds `core/`, `web/core/`, `docroot/core/`, and `sites/*/files/`; Rails adds `tmp/`, `log/`, `public/assets/`; Next.js adds `.next/`. Claude reports the exclusion list before reading any files so you can override it.
+
 **Analyze an entire codebase:**
 
 ```text
 analyze src/
 ```
 
-Claude recursively reads every source file under `src/`, creates wiki pages for each class, function, API endpoint, library, design pattern, and anti-pattern it finds, and cross-links everything. Each page records `file:line` references back to the source code so everything stays traceable.
+Claude runs four phased passes: (1) detect framework, (2) enumerate every candidate file with `find` and report the total count, (3) classify each file as `analyze`, `defer`, or `exclude` (with the breakdown shown to you before reading begins), (4) read every file in the `analyze` bucket. It then creates wiki pages for each class, function, API endpoint, library, design pattern, and anti-pattern it finds, and cross-links everything. Each page records `file:line` references back to the source code so everything stays traceable. A required coverage-verification step diffs the analyzed files against pages' `source_files` frontmatter and refuses to report success while any non-excluded file is unreferenced. Files that genuinely cannot fit in one session are listed in a `## Deferred Files` section in `wiki/index.md` so a follow-up `analyze` run knows what's left.
 
 **Analyze a single file:**
 
@@ -207,7 +211,7 @@ Scans dependency manifests (`package.json`, `requirements.txt`, `Cargo.toml`, `g
 document-project
 ```
 
-Produces a comprehensive technical deep dive at `wiki/deep-dive/technical-deep-dive.md` — a polished document covering architecture, core data models, subsystem deep dives, API layer, design patterns, and technical debt. Note: `analyze` automatically calls `document-project` at the end of every run.
+Produces a comprehensive technical deep dive at `wiki/deep-dive/technical-deep-dive.md` — a polished document covering architecture, core data models, subsystem deep dives, API layer, design patterns, and technical debt. The skill also updates `wiki/index.md` with a `## Deep Dive` section and a Statistics row so the page is reachable from the graph viewer. `analyze` calls `document-project` automatically as a **required** final step and verifies (via grep) that the deep-dive file, its index entry, and its Statistics row all landed before reporting completion.
 
 **Ask questions about the code:**
 
@@ -425,15 +429,15 @@ Saved to `wiki/blogs/blog-<topic-slug>-<YYYY-MM-DD>.md`.
 
 #### `analyze <path>`
 
-Reads source files at the given path (single file or directory, recursive), creates wiki pages for classes, functions, API endpoints, libraries, design patterns, and anti-patterns, then cross-links everything.
+Reads source files at the given path (single file or directory, recursive), creates wiki pages for classes, functions, API endpoints, libraries, design patterns, and anti-patterns, then cross-links everything. Auto-detects the project's framework (Drupal, Rails, Django, Next.js, Symfony, Express) and adapts both the file glob and the page-mapping convention accordingly. Default extensions span 14+ languages plus YAML/TOML; framework-specific extensions are appended automatically.
 
 ```text
 analyze src/server/index.js
 analyze src/
-analyze src/components/UserAuth.tsx
+analyze web/modules/custom/         # Drupal: one wiki page per module dir
 ```
 
-Re-running `analyze` on a changed file updates existing pages rather than overwriting them. Called automatically at the end: runs `journal` then `document-project`.
+Runs as four phased passes (detect → enumerate → classify → read) with the discovered/analyzed/deferred/excluded breakdown shown to you before reading begins. A required coverage-verification step refuses to report success while any non-excluded file is unreferenced. Re-running `analyze` on a changed file updates existing pages rather than overwriting them. At the end, `journal` runs, then `document-project` runs as a required step (verified by grep — both the deep-dive file and its `## Deep Dive` entry in `wiki/index.md` must exist before completion is reported).
 
 #### `analyze-deps`
 
@@ -441,7 +445,7 @@ Scans dependency manifests (`package.json`, `requirements.txt`, `Cargo.toml`, et
 
 #### `document-project`
 
-Generates a comprehensive **Technical Deep Dive** document for the entire codebase. Reads all wiki pages and source files, then produces a single polished Markdown file at `wiki/deep-dive/technical-deep-dive.md` — structured like a dev blog post with callout boxes, real code snippets, comparison tables with "Why" columns, and Mermaid diagrams. Called automatically after every `analyze` run.
+Generates a comprehensive **Technical Deep Dive** document for the entire codebase. Reads all wiki pages and source files, then produces a single polished Markdown file at `wiki/deep-dive/technical-deep-dive.md` — structured like a dev blog post with callout boxes, real code snippets, comparison tables with "Why" columns, and Mermaid diagrams. Also updates `wiki/index.md` with a `## Deep Dive` section and a `Deep Dive` row in the Statistics table so the page is reachable from the graph viewer. Has four explicit success criteria (deep-dive file written, index section present, Statistics row present, log entry written) — all four are grep-verified before the skill reports completion. Called automatically as a required step after every `analyze` run.
 
 ```text
 document-project
@@ -504,7 +508,7 @@ Adds a ticker to the watchlist. Claude fetches current price and basic info; the
 Audits all wiki pages for health issues and auto-fixes what it can; reports the rest for human judgement.
 
 - **Research vaults:** orphan pages, broken links, stale source citations, missing required sections, contradictions between pages
-- **Code-analysis vaults:** stale `source_files` references, broken `file:line` citations in Where Found / Calls / Called By, orphan pages, missing cross-links
+- **Code-analysis vaults:** stale `source_files` references, broken `file:line` citations in Where Found / Calls / Called By, orphan pages, missing cross-links, missing/stale/unindexed deep-dive page (`wiki/deep-dive/technical-deep-dive.md`), and **untracked source files** — files on disk that exist under a previously analyzed root but are not referenced in any page's `source_files` and are not listed in `## Deferred Files` (lint flags them so coverage gaps are caught between `analyze` runs)
 - **Portfolio vaults:** stale holding prices (>7 days), stale asset valuations (>90 days), holdings without thesis pages, unvalidated theses, broken decision links, missing required sections
 
 #### `journal [description]`
